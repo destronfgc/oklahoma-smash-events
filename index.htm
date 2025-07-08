@@ -98,7 +98,7 @@
             let debounceTimer;
 
             // --- GraphQL Query ---
-            // This query is now more dynamic to support pagination and filtering.
+            // This query now includes event standings to fetch the winner.
             const graphqlQuery = `
                 query TournamentsByState($perPage: Int!, $page: Int!, $filter: TournamentPageFilter) {
                   tournaments(query: {
@@ -119,6 +119,19 @@
                       images {
                         url
                       }
+                      events(filter: { videogameId: [1386] }) {
+                        id
+                        name
+                        standings(query: { perPage: 1, page: 1 }) {
+                          nodes {
+                            placement
+                            entrant {
+                              id
+                              name
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -137,12 +150,10 @@
                     videogameIds: [1386] // Default to Smash Ultimate
                 };
 
-                // Add search term to filter if it exists
                 if (searchTerm) {
                     filter.name = searchTerm;
                 }
 
-                // Add date filter based on toggle
                 if (showPast) {
                     filter.beforeDate = timestamp;
                 } else {
@@ -204,6 +215,17 @@
                     const startDate = new Date(tournament.startAt * 1000);
                     const formattedDate = startDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+                    // Logic to display the winner for past tournaments
+                    let winnerHTML = '';
+                    if (showPast) {
+                        const winner = tournament.events?.[0]?.standings?.nodes?.[0];
+                        if (winner) {
+                            winnerHTML = `<p class="text-gray-600 mb-4"><span class="font-semibold">Winner:</span> ${winner.entrant.name}</p>`;
+                        } else {
+                            winnerHTML = `<p class="text-gray-600 mb-4"><span class="font-semibold">Winner:</span> TBD</p>`;
+                        }
+                    }
+
                     tournamentCard.innerHTML = `
                         <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer">
                             <img src="${imageUrl}" alt="${tournament.name}" class="w-full h-48 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/600x400/E2E8F0/4A5568?text=Image+Not+Found';">
@@ -212,6 +234,7 @@
                             <h2 class="text-xl font-bold mb-2 h-14 overflow-hidden">${tournament.name}</h2>
                             <p class="text-gray-600 mb-2"><span class="font-semibold">Date:</span> ${formattedDate}</p>
                             <p class="text-gray-600 mb-4"><span class="font-semibold">Location:</span> ${tournament.city || 'TBA'}</p>
+                            ${winnerHTML}
                             <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
                                 View Tournament
                             </a>
