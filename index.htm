@@ -220,7 +220,18 @@
                     if (showPast) {
                         const winner = tournament.events?.[0]?.standings?.nodes?.[0];
                         if (winner) {
-                            winnerHTML = `<p class="text-gray-600 mb-4"><span class="font-semibold">Winner:</span> ${winner.entrant.name}</p>`;
+                            const entrantName = winner.entrant.name;
+                            const nameParts = entrantName.split('|').map(part => part.trim());
+                            let styledName = '';
+
+                            if (nameParts.length > 1) {
+                                // Has a sponsor/prefix, style them differently
+                                styledName = `<span class="font-medium text-gray-500">${nameParts[0]}</span> <span class="font-bold text-gray-800">${nameParts[1]}</span>`;
+                            } else {
+                                // Just a name, make it bold
+                                styledName = `<span class="font-bold text-gray-800">${entrantName}</span>`;
+                            }
+                            winnerHTML = `<p class="text-gray-600 mb-4"><span class="font-semibold">Winner:</span> ${styledName}</p>`;
                         } else {
                             winnerHTML = `<p class="text-gray-600 mb-4"><span class="font-semibold">Winner:</span> TBD</p>`;
                         }
