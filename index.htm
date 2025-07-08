@@ -17,27 +17,59 @@
             transform: translateY(-5px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
+        /* Simple toggle switch styles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #4A90E2;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #4A90E2;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
     <div class="container mx-auto px-4 py-8">
-        <header class="text-center mb-12">
+        <header class="text-center mb-8">
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Oklahoma Smash Tournaments</h1>
-            <p class="text-lg text-gray-600 mt-2">Upcoming Super Smash Bros. tournaments in the Sooner State.</p>
+            <p class="text-lg text-gray-600 mt-2">Find local tournaments for your favorite games.</p>
         </header>
+
+        <!-- Controls: Search, Toggle -->
+        <div class="mb-8 p-4 bg-white rounded-lg shadow-md flex flex-col md:flex-row gap-4 items-center justify-center">
+            <!-- Search Input -->
+            <div class="relative w-full md:w-1/2">
+                <input type="text" id="search-box" placeholder="Search by tournament name..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <!-- Toggle for Past Events -->
+            <div class="flex items-center justify-center">
+                <label for="past-events-toggle" class="mr-3 text-gray-700">Show Past Tournaments</label>
+                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                    <input type="checkbox" name="toggle" id="past-events-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                    <label for="past-events-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                </div>
+            </div>
+        </div>
 
         <div id="loading" class="text-center">
             <p class="text-lg">Loading tournaments...</p>
         </div>
 
-        <div id="tournaments-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Tournament cards will be inserted here by JavaScript -->
+        <div id="tournaments-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[400px]">
+            <!-- Tournament cards will be inserted here -->
         </div>
 
         <div id="error" class="hidden text-center text-red-500 mt-8">
-            <p>Could not fetch tournament data. Please ensure your API key is correct and valid.</p>
+            <!-- Error messages will be shown here -->
         </div>
+        
+        <!-- Pagination -->
+        <div id="pagination-controls" class="flex justify-center items-center mt-12 gap-4">
+            <button id="prev-button" class="bg-blue-500 text-white font-semibold px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">Previous</button>
+            <span id="page-indicator" class="text-gray-700 font-medium">Page 1</span>
+            <button id="next-button" class="bg-blue-500 text-white font-semibold px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">Next</button>
+        </div>
+
     </div>
 
     <footer class="text-center py-6 mt-12 bg-white border-t">
@@ -46,33 +78,44 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
             const tournamentsList = document.getElementById('tournaments-list');
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
+            const searchBox = document.getElementById('search-box');
+            const pastEventsToggle = document.getElementById('past-events-toggle');
+            const prevButton = document.getElementById('prev-button');
+            const nextButton = document.getElementById('next-button');
+            const pageIndicator = document.getElementById('page-indicator');
+            const paginationControls = document.getElementById('pagination-controls');
 
-            // --- IMPORTANT ---
-            // API key has been inserted below.
-            const apiKey = 'd962f418dd0489a80b44305d874f673d'; 
+            // --- API & State ---
+            const apiKey = 'd962f418dd0489a80b44305d874f673d';
+            let currentPage = 1;
+            let totalPages = 1;
+            let searchTerm = '';
+            let showPast = false;
+            let debounceTimer;
 
+            // --- GraphQL Query ---
+            // This query is now more dynamic to support pagination and filtering.
             const graphqlQuery = `
-                query TournamentsByState($state: String!, $perPage: Int!) {
+                query TournamentsByState($perPage: Int!, $page: Int!, $filter: TournamentPageFilter) {
                   tournaments(query: {
                     perPage: $perPage
-                    filter: {
-                      addrState: $state
-                      afterDate: ${Math.floor(Date.now() / 1000)} # FIX: Changed 'after' to 'afterDate'
-                      videogameIds: [
-                        1386 # Super Smash Bros. Ultimate
-                      ]
-                    }
+                    page: $page
+                    filter: $filter
                   }) {
+                    pageInfo {
+                      totalPages
+                      page
+                    }
                     nodes {
                       id
                       name
                       slug
                       startAt
                       city
-                      venueAddress
                       images {
                         url
                       }
@@ -81,75 +124,92 @@
                 }
             `;
 
-            const variables = {
-                "state": "OK",
-                "perPage": 20 
+            // --- Main Fetch Function ---
+            const fetchTournaments = async () => {
+                loading.style.display = 'block';
+                tournamentsList.innerHTML = '';
+                error.classList.add('hidden');
+                paginationControls.style.visibility = 'hidden';
+
+                const timestamp = Math.floor(Date.now() / 1000);
+                let filter = {
+                    addrState: "OK",
+                    videogameIds: [1386] // Default to Smash Ultimate
+                };
+
+                // Add search term to filter if it exists
+                if (searchTerm) {
+                    filter.name = searchTerm;
+                }
+
+                // Add date filter based on toggle
+                if (showPast) {
+                    filter.beforeDate = timestamp;
+                } else {
+                    filter.afterDate = timestamp;
+                }
+
+                const variables = {
+                    perPage: 12,
+                    page: currentPage,
+                    filter: filter
+                };
+
+                try {
+                    const response = await fetch('https://api.start.gg/gql/alpha', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`,
+                        },
+                        body: JSON.stringify({
+                            query: graphqlQuery,
+                            variables: variables
+                        }),
+                    });
+
+                    const data = await response.json();
+                    loading.style.display = 'none';
+
+                    if (data.errors) {
+                        throw new Error(data.errors[0].message);
+                    }
+                    
+                    const tournaments = data.data.tournaments.nodes;
+                    const pageInfo = data.data.tournaments.pageInfo;
+                    totalPages = pageInfo.totalPages || 1;
+
+                    if (tournaments.length === 0) {
+                        tournamentsList.innerHTML = `<p class="text-center col-span-full text-gray-500">No tournaments found with the current filters.</p>`;
+                    } else {
+                        renderTournaments(tournaments);
+                    }
+                    updatePagination();
+
+                } catch (err) {
+                    console.error('Fetch error:', err);
+                    loading.style.display = 'none';
+                    error.classList.remove('hidden');
+                    error.textContent = `Error: ${err.message}`;
+                }
             };
-
-            if (apiKey === 'YOUR_API_KEY' || !apiKey) {
-                loading.style.display = 'none';
-                error.classList.remove('hidden');
-                error.innerHTML = '<p>Please replace "YOUR_API_KEY" with your actual start.gg API key in the script.</p>';
-                return;
-            }
-
-
-            fetch('https://api.start.gg/gql/alpha', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`,
-                },
-                body: JSON.stringify({
-                    query: graphqlQuery,
-                    variables: variables
-                }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                loading.style.display = 'none';
-                
-                if (data.errors) {
-                    console.error('GraphQL Errors:', data.errors);
-                    error.classList.remove('hidden');
-                    error.innerHTML = `<p>An error occurred while fetching data: ${data.errors[0].message}</p>`;
-                    return;
-                }
-
-                if (!data.data || !data.data.tournaments) {
-                    console.error('Unexpected data structure:', data);
-                    error.classList.remove('hidden');
-                    error.innerHTML = `<p>Received an unexpected response from the server.</p>`;
-                    return;
-                }
-
-                const tournaments = data.data.tournaments.nodes;
-
-                if (tournaments.length === 0) {
-                    tournamentsList.innerHTML = '<p class="text-center col-span-full">No upcoming tournaments found in Oklahoma.</p>';
-                    return;
-                }
-
+            
+            // --- Render Functions ---
+            const renderTournaments = (tournaments) => {
+                tournamentsList.innerHTML = ''; // Clear previous results
                 tournaments.forEach(tournament => {
                     const tournamentCard = document.createElement('div');
                     tournamentCard.className = 'bg-white rounded-lg shadow-md overflow-hidden tournament-card';
-
                     const imageUrl = tournament.images.length > 0 ? tournament.images[0].url : `https://placehold.co/600x400/E2E8F0/4A5568?text=${encodeURIComponent(tournament.name)}`;
-
                     const startDate = new Date(tournament.startAt * 1000);
-                    const formattedDate = startDate.toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                    });
+                    const formattedDate = startDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
                     tournamentCard.innerHTML = `
                         <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer">
                             <img src="${imageUrl}" alt="${tournament.name}" class="w-full h-48 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/600x400/E2E8F0/4A5568?text=Image+Not+Found';">
                         </a>
                         <div class="p-6">
-                            <h2 class="text-xl font-bold mb-2">${tournament.name}</h2>
+                            <h2 class="text-xl font-bold mb-2 h-14 overflow-hidden">${tournament.name}</h2>
                             <p class="text-gray-600 mb-2"><span class="font-semibold">Date:</span> ${formattedDate}</p>
                             <p class="text-gray-600 mb-4"><span class="font-semibold">Location:</span> ${tournament.city || 'TBA'}</p>
                             <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
@@ -159,14 +219,51 @@
                     `;
                     tournamentsList.appendChild(tournamentCard);
                 });
-            })
-            .catch(err => {
-                console.error('Network or fetch error:', err);
-                loading.style.display = 'none';
-                error.classList.remove('hidden');
-                error.innerHTML = `<p>A network error occurred. Please check your connection and try again.</p>`;
+            };
 
+            const updatePagination = () => {
+                if (totalPages > 1) {
+                    paginationControls.style.visibility = 'visible';
+                    pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+                    prevButton.disabled = currentPage === 1;
+                    nextButton.disabled = currentPage === totalPages;
+                } else {
+                    paginationControls.style.visibility = 'hidden';
+                }
+            };
+
+            // --- Event Listeners ---
+            searchBox.addEventListener('input', (e) => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    searchTerm = e.target.value;
+                    currentPage = 1;
+                    fetchTournaments();
+                }, 500); // Debounce to avoid API calls on every keystroke
             });
+
+            pastEventsToggle.addEventListener('change', (e) => {
+                showPast = e.target.checked;
+                currentPage = 1;
+                fetchTournaments();
+            });
+
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    fetchTournaments();
+                }
+            });
+
+            nextButton.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    fetchTournaments();
+                }
+            });
+
+            // --- Initial Load ---
+            fetchTournaments();
         });
     </script>
 
