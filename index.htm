@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oklahoma Smash Tournaments</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .tournament-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .tournament-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Oklahoma Smash Tournaments</h1>
+            <p class="text-lg text-gray-600 mt-2">Upcoming Super Smash Bros. tournaments in the Sooner State.</p>
+        </header>
+
+        <div id="loading" class="text-center">
+            <p class="text-lg">Loading tournaments...</p>
+        </div>
+
+        <div id="tournaments-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Tournament cards will be inserted here by JavaScript -->
+        </div>
+
+        <div id="error" class="hidden text-center text-red-500 mt-8">
+            <p>Could not fetch tournament data. Please ensure your API key is correct and valid.</p>
+        </div>
+    </div>
+
+    <footer class="text-center py-6 mt-12 bg-white border-t">
+        <p class="text-gray-600">Powered by the <a href="https://start.gg/dev" target="_blank" class="text-blue-500 hover:underline">start.gg API</a></p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tournamentsList = document.getElementById('tournaments-list');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+
+            // --- IMPORTANT ---
+            // API key has been inserted below.
+            const apiKey = 'd962f418dd0489a80b44305d874f673d'; 
+
+            const graphqlQuery = `
+                query TournamentsByState($state: String!, $perPage: Int!) {
+                  tournaments(query: {
+                    perPage: $perPage
+                    filter: {
+                      addrState: $state
+                      afterDate: ${Math.floor(Date.now() / 1000)} # FIX: Changed 'after' to 'afterDate'
+                      videogameIds: [
+                        1386 # Super Smash Bros. Ultimate
+                      ]
+                    }
+                  }) {
+                    nodes {
+                      id
+                      name
+                      slug
+                      startAt
+                      city
+                      venueAddress
+                      images {
+                        url
+                      }
+                    }
+                  }
+                }
+            `;
+
+            const variables = {
+                "state": "OK",
+                "perPage": 20 
+            };
+
+            if (apiKey === 'YOUR_API_KEY' || !apiKey) {
+                loading.style.display = 'none';
+                error.classList.remove('hidden');
+                error.innerHTML = '<p>Please replace "YOUR_API_KEY" with your actual start.gg API key in the script.</p>';
+                return;
+            }
+
+
+            fetch('https://api.start.gg/gql/alpha', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({
+                    query: graphqlQuery,
+                    variables: variables
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                
+                if (data.errors) {
+                    console.error('GraphQL Errors:', data.errors);
+                    error.classList.remove('hidden');
+                    error.innerHTML = `<p>An error occurred while fetching data: ${data.errors[0].message}</p>`;
+                    return;
+                }
+
+                if (!data.data || !data.data.tournaments) {
+                    console.error('Unexpected data structure:', data);
+                    error.classList.remove('hidden');
+                    error.innerHTML = `<p>Received an unexpected response from the server.</p>`;
+                    return;
+                }
+
+                const tournaments = data.data.tournaments.nodes;
+
+                if (tournaments.length === 0) {
+                    tournamentsList.innerHTML = '<p class="text-center col-span-full">No upcoming tournaments found in Oklahoma.</p>';
+                    return;
+                }
+
+                tournaments.forEach(tournament => {
+                    const tournamentCard = document.createElement('div');
+                    tournamentCard.className = 'bg-white rounded-lg shadow-md overflow-hidden tournament-card';
+
+                    const imageUrl = tournament.images.length > 0 ? tournament.images[0].url : `https://placehold.co/600x400/E2E8F0/4A5568?text=${encodeURIComponent(tournament.name)}`;
+
+                    const startDate = new Date(tournament.startAt * 1000);
+                    const formattedDate = startDate.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+
+                    tournamentCard.innerHTML = `
+                        <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer">
+                            <img src="${imageUrl}" alt="${tournament.name}" class="w-full h-48 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/600x400/E2E8F0/4A5568?text=Image+Not+Found';">
+                        </a>
+                        <div class="p-6">
+                            <h2 class="text-xl font-bold mb-2">${tournament.name}</h2>
+                            <p class="text-gray-600 mb-2"><span class="font-semibold">Date:</span> ${formattedDate}</p>
+                            <p class="text-gray-600 mb-4"><span class="font-semibold">Location:</span> ${tournament.city || 'TBA'}</p>
+                            <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                                View Tournament
+                            </a>
+                        </div>
+                    `;
+                    tournamentsList.appendChild(tournamentCard);
+                });
+            })
+            .catch(err => {
+                console.error('Network or fetch error:', err);
+                loading.style.display = 'none';
+                error.classList.remove('hidden');
+                error.innerHTML = `<p>A network error occurred. Please check your connection and try again.</p>`;
+
+            });
+        });
+    </script>
+
+</body>
+</html>
