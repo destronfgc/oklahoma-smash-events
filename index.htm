@@ -73,6 +73,10 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            transition: box-shadow 0.3s ease-in-out;
+        }
+        .card-container:hover .card-face {
+             box-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
         }
         .card-back {
             transform: rotateY(180deg);
@@ -115,10 +119,10 @@
             background-color: var(--border-color);
         }
         .ultimate-icon-glow {
-            filter: invert(1) drop-shadow(0 0 5px #ef4444);
+            filter: drop-shadow(0 0 5px #ef4444);
         }
         .melee-icon-glow {
-            filter: invert(1) drop-shadow(0 0 6px #a78bfa);
+            filter: drop-shadow(0 0 6px #a78bfa);
         }
         .p-plus-icon {
              filter: drop-shadow(0 0 5px #00ff00);
@@ -141,6 +145,36 @@
             margin: 2rem auto;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        #back-to-top-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: none;
+            transition: opacity 0.3s, transform 0.3s;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        #back-to-top-btn.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .share-popover {
+            position: absolute;
+            bottom: 50px;
+            right: 0;
+            background-color: #1F2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: none; /* Hidden by default */
+        }
     </style>
 </head>
 <body class="text-gray-200">
@@ -163,13 +197,18 @@
             </div>
         </div>
 
-        <div id="controls-container" class="mb-8 p-4 bg-gray-900 rounded-lg shadow-md flex flex-col md:flex-row gap-4 items-center justify-center"></div>
+        <div id="controls-container" class="mb-2 p-4 bg-gray-900 rounded-lg shadow-md flex flex-col md:flex-row gap-4 items-center justify-center"></div>
+        <div id="stat-counter" class="text-center text-sm text-gray-400 mb-8"></div>
         <div id="loading" class="text-center"><div class="loader"></div></div>
         <div id="tournaments-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
         <div id="pagination-controls" class="flex justify-center items-center mt-12 gap-4"></div>
     </div>
 
     <footer class="text-center py-6 mt-12 bg-gray-900 rounded-lg shadow-md border-t border-gray-700"></footer>
+    
+    <button id="back-to-top-btn" class="p-3 rounded-full ok-blue ok-blue-hover text-white shadow-lg">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+    </button>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -183,7 +222,8 @@
                 searchTerm: '',
                 activeCity: '',
                 showPast: false,
-                debounceTimer: null
+                debounceTimer: null,
+                countdownInterval: null
             };
             
             const graphqlQuery = `
@@ -196,6 +236,15 @@
                       images(type: "banner") { url }
                       events(filter: { videogameId: [$videogameId] }) {
                         id slug name
+                        standings(query: { perPage: 1, page: 1 }) {
+                          nodes {
+                            placement
+                            entrant {
+                              id
+                              name
+                            }
+                          }
+                        }
                       }
                     }
                   }
@@ -218,8 +267,7 @@
                     addrState: "OK",
                     videogameIds: [state.activeGameId] 
                 };
-                
-                // Don't filter by name/city for featured event
+
                 if (!isFeatured) {
                     if (state.searchTerm) filter.name = state.searchTerm;
                 }
@@ -232,7 +280,7 @@
 
                 const queryWithGameId = graphqlQuery.replace('$videogameId', state.activeGameId);
                 const variables = {
-                    perPage: isFeatured ? 1 : 50, // Fetch more for client-side city filtering
+                    perPage: isFeatured ? 1 : 50,
                     page: isFeatured ? 1 : state.currentPage,
                     filter: filter
                 };
@@ -257,7 +305,7 @@
                          return;
                     } 
                     
-                    // Client-side city filter
+                    const totalBeforeCityFilter = tournaments.length;
                     if (state.activeCity) {
                         tournaments = tournaments.filter(t => t.city === state.activeCity);
                     }
@@ -272,7 +320,7 @@
                     } else {
                         renderTournaments();
                     }
-                    // Disable pagination if city is selected as we're not fetching all pages
+                    updateStatCounter(tournaments.length, totalBeforeCityFilter);
                     if(!state.activeCity) updatePagination(pageInfo);
 
                 } catch (err) {
@@ -300,11 +348,13 @@
                                 <div class="uppercase tracking-wide text-sm text-indigo-400 font-semibold">Featured Tournament</div>
                                 <a href="https://start.gg/${tournament.slug}" target="_blank" class="block mt-1 text-2xl leading-tight font-bold text-white hover:underline">${tournament.name}</a>
                                 <p class="mt-2 text-gray-400">${tournament.city} • ${formattedDate}</p>
+                                <div id="countdown-timer" class="mt-2 text-lg text-green-400"></div>
                                 <a href="https://start.gg/${tournament.slug}/register" target="_blank" class="mt-4 inline-block ok-blue ok-blue-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors">Register Now</a>
                             </div>
                         </div>
                     </div>
                 `;
+                startCountdown(tournament.startAt);
             };
 
             const renderTournaments = () => {
@@ -325,6 +375,21 @@
                     const formattedDate = startDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                     const registrationOpen = tournament.registrationClosesAt ? new Date(tournament.registrationClosesAt * 1000) > new Date() : true;
                     
+                    let winnerHTML = '';
+                    if (state.showPast) {
+                        const winner = tournament.events?.[0]?.standings?.nodes?.[0];
+                        if (winner) {
+                            const entrantName = winner.entrant.name;
+                            const nameParts = entrantName.split('|').map(part => part.trim());
+                            let styledName = (nameParts.length > 1)
+                                ? `<span class="font-medium text-gray-400">${nameParts[0]}</span> <span class="font-bold text-gray-100">${nameParts[1]}</span>`
+                                : `<span class="font-bold text-gray-100">${entrantName}</span>`;
+                            winnerHTML = `<p class="text-gray-300 mb-4"><span class="font-semibold text-gray-200">Winner:</span> ${styledName}</p>`;
+                        } else {
+                            winnerHTML = `<p class="text-gray-300 mb-4"><span class="font-semibold text-gray-200">Winner:</span> TBD</p>`;
+                        }
+                    }
+                    
                     cardFront.innerHTML = `
                         <div class="image-container">
                             <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer">
@@ -335,8 +400,18 @@
                             <h2 class="text-xl font-bold mb-2 h-14 overflow-hidden" style="color: var(--text-color-primary);">${tournament.name}</h2>
                             <p class="mb-2" style="color: var(--text-color-secondary);"><span class="font-semibold" style="color: var(--text-color-primary);">Date:</span> ${formattedDate}</p>
                             <p class="mb-4" style="color: var(--text-color-secondary);"><span class="font-semibold" style="color: var(--text-color-primary);">Location:</span> ${tournament.city || 'TBA'}</p>
+                            ${winnerHTML}
                             <div class="mt-auto flex items-center justify-between">
                                 <a href="https://start.gg/${tournament.slug}/register" target="_blank" class="inline-block ok-blue ok-blue-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm ${registrationOpen && !state.showPast ? '' : 'hidden'}">Register</a>
+                                <div class="relative flex gap-2">
+                                    <button class="calendar-button" title="Add to Calendar">
+                                        <svg class="w-6 h-6 text-gray-400 hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    </button>
+                                    <button class="share-button" title="Share Tournament">
+                                        <svg class="w-6 h-6 text-gray-400 hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
+                                    </button>
+                                    <div class="share-popover"></div>
+                                </div>
                             </div>
                         </div>`;
                     
@@ -385,6 +460,39 @@
                     paginationEl.appendChild(nextButton);
                 }
             };
+
+            const updateStatCounter = (displayed, total) => {
+                const statEl = document.getElementById('stat-counter');
+                if (state.activeCity) {
+                    statEl.textContent = `Showing ${displayed} tournaments in ${state.activeCity}.`;
+                } else {
+                    statEl.textContent = `Showing ${displayed} of ~${total} total tournaments.`;
+                }
+            };
+
+            const startCountdown = (startTime) => {
+                clearInterval(state.countdownInterval);
+                const countdownEl = document.getElementById('countdown-timer');
+                if (!countdownEl) return;
+
+                state.countdownInterval = setInterval(() => {
+                    const now = new Date().getTime();
+                    const distance = (startTime * 1000) - now;
+
+                    if (distance < 0) {
+                        countdownEl.innerHTML = "Event has started!";
+                        clearInterval(state.countdownInterval);
+                        return;
+                    }
+
+                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    countdownEl.innerHTML = `Starts in: ${days}d ${hours}h ${minutes}m ${seconds}s`;
+                }, 1000);
+            };
             
             const applyTheme = (theme) => {
                 const themeToggle = document.getElementById('theme-toggle');
@@ -417,7 +525,7 @@
                 document.querySelector('footer').innerHTML = `
                     <div class="mb-4">
                         <a href="https://discordapp.com/invite/ycZbHSz" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-lg ok-blue-text hover:text-indigo-400 transition-colors">
-                            <img src="images/discord.png" class="w-6 h-6" alt="Discord Icon" style="filter: invert(1);">
+                            <img src="images/discord.png" class="w-6 h-6" alt="Discord Icon">
                             Join the Oklahoma Smash Discord
                         </a>
                     </div>
@@ -453,6 +561,18 @@
                         fetchTournaments();
                         fetchTournaments(true);
                     }
+                });
+                
+                const backToTopBtn = document.getElementById('back-to-top-btn');
+                window.addEventListener('scroll', () => {
+                    if (window.scrollY > 300) {
+                        backToTopBtn.classList.add('show');
+                    } else {
+                        backToTopBtn.classList.remove('show');
+                    }
+                });
+                backToTopBtn.addEventListener('click', () => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
 
                 fetchTournaments();
