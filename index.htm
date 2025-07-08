@@ -9,47 +9,94 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            /* Dark Theme (Default) */
+            --bg-color: #1F2937;
+            --card-bg-color: #111827;
+            --header-bg-color: #111827;
+            --text-color-primary: #F3F4F6;
+            --text-color-secondary: #9CA3AF;
+            --border-color: #374151;
+            --accent-color: #4F46E5;
+            --accent-color-hover: #4338CA;
+            --active-tab-color: #818CF8;
+        }
+
+        .light-theme {
+            /* Light Theme (Scissortail Sunset) */
+            --bg-color: #FFF7ED;
+            --card-bg-color: #FFFFFF;
+            --header-bg-color: #FFFFFF;
+            --text-color-primary: #1F2937;
+            --text-color-secondary: #6B7280;
+            --border-color: #E5E7EB;
+            --accent-color: #D97706;
+            --accent-color-hover: #B45309;
+            --active-tab-color: #F59E0B;
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #1F2937; /* gray-800 */
+            background-color: var(--bg-color);
+            color: var(--text-color-primary);
+            transition: background-color 0.3s, color 0.3s;
         }
         .font-anton {
             font-family: 'Anton', sans-serif;
         }
-        .image-container {
-            overflow: hidden;
-        }
-        .tournament-card .banner-image {
-            transition: transform 0.4s ease;
-        }
-        .tournament-card:hover .banner-image {
-            transform: scale(1.05);
-        }
-        .tournament-card {
-            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-            background-color: #111827; /* gray-900 */
-            border: 1px solid #374151; /* gray-700 */
-            opacity: 0; /* Start hidden for animation */
-        }
-        .tournament-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 0 20px rgba(79, 70, 229, 0.4); /* Brighter indigo shadow */
-        }
-        /* Custom colors for the new theme */
-        .ok-blue { background-color: #4F46E5; } /* indigo-600 */
-        .ok-blue-hover:hover { background-color: #4338CA; } /* indigo-700 */
-        .ok-blue-focus:focus { ring-color: #6366F1; } /* indigo-500 */
-        .ok-blue-border { border-color: #4F46E5; }
-        .ok-blue-text { color: #6366F1; } /* indigo-500 */
         
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #4F46E5;
+        /* Flipping Card Styles */
+        .card-container {
+            perspective: 1000px;
+            min-height: 450px;
         }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #4F46E5;
+        .tournament-card-flipper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.7s;
+            transform-style: preserve-3d;
+            opacity: 0;
         }
-        /* Game Tab Styles */
+        .card-container:hover .tournament-card-flipper {
+            transform: rotateY(180deg);
+        }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1rem;
+        }
+        .card-back h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-color-primary);
+        }
+        .card-back p {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        /* Other Styles */
+        .ok-blue { background-color: var(--accent-color); }
+        .ok-blue-hover:hover { background-color: var(--accent-color-hover); }
         .game-tab {
             cursor: pointer;
             padding: 12px;
@@ -61,239 +108,132 @@
             border-radius: 8px;
         }
         .game-tab.active {
-            border-bottom-color: #818CF8;
+            color: var(--active-tab-color);
+            border-bottom-color: var(--active-tab-color);
         }
         .game-tab:not(.active):hover {
-            background-color: #374151; /* gray-700 on hover */
+            background-color: var(--border-color);
         }
-        /* Custom style for icon glows */
         .ultimate-icon-glow {
-            filter: drop-shadow(0 0 5px #ef4444); /* Red glow */
+            filter: invert(1) drop-shadow(0 0 5px #ef4444);
         }
         .melee-icon-glow {
-            filter: drop-shadow(0 0 6px #a78bfa); /* Purple glow */
+            filter: invert(1) drop-shadow(0 0 6px #a78bfa);
         }
         .p-plus-icon {
              filter: drop-shadow(0 0 5px #00ff00);
         }
 
-        /* Animation for cards */
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .card-enter-animation {
             animation: fadeInUp 0.5s ease-out forwards;
         }
-
-        /* Custom Loader */
         .loader {
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            border: 5px solid #374151; /* gray-700 */
-            border-top-color: #4F46E5; /* indigo-600 */
+            border: 5px solid #374151;
+            border-top-color: var(--accent-color);
             animation: spin 1s linear infinite;
             margin: 2rem auto;
         }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-        
-        /* Share Popover */
-        .share-popover {
-            position: absolute;
-            bottom: 50px;
-            right: 0;
-            background-color: #1F2937;
-            border: 1px solid #374151;
-            border-radius: 8px;
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            z-index: 10;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            display: none; /* Hidden by default */
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="text-gray-200">
 
     <div class="container mx-auto px-4 py-8">
-        <header class="text-center mb-6 py-8 bg-gray-900 rounded-xl shadow-lg">
+        <header class="text-center mb-6 py-8 bg-gray-900 rounded-xl shadow-lg relative">
             <h1 class="font-anton text-6xl font-bold text-indigo-500 tracking-wider">OKLAHOMA SMASH</h1>
             <p class="text-lg text-gray-400 mt-2 font-light">The official hub for OK Smash tournaments.</p>
+            <button id="theme-toggle" class="absolute top-4 right-4 p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"></button>
         </header>
 
-        <!-- Featured Tournament Section -->
         <div id="featured-tournament" class="mb-12"></div>
 
-        <!-- Game Tabs -->
-        <div id="game-tabs" class="flex flex-wrap justify-center items-center gap-6 mb-8 text-gray-400 border-b border-gray-700">
-            <div class="game-tab active" data-game-id="1386" title="Ultimate"><img src="images/ultimate-logo.png" class="h-10 ultimate-icon-glow" alt="Ultimate"></div>
-            <div class="game-tab" data-game-id="1" title="Melee"><img src="images/melee-logo.png" class="h-10 melee-icon-glow" alt="Melee"></div>
-            <div class="game-tab" data-game-id="33602" title="P+"><img src="images/p-plus-logo.png" class="h-10 p-plus-icon" alt="P+"></div>
+        <div id="game-tabs" class="flex flex-wrap justify-center items-center gap-4 mb-8 text-gray-400 border-b border-gray-700">
+            <div class="game-tab active" data-game-id="1386" title="Ultimate"><img src="images/ultimate-logo.png" class="h-10 ultimate-icon-glow" alt="Ultimate Icon"></div>
+            <div class="game-tab" data-game-id="1" title="Melee"><img src="images/melee-logo.png" class="h-10 melee-icon-glow" alt="Melee Icon"></div>
+            <div class="game-tab" data-game-id="33602" title="P+"><img src="images/p-plus-logo.png" class="h-10 p-plus-icon" alt="P+ Icon"></div>
             <div class="game-tab" data-game-id="18070" title="Other Fighters">
                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
             </div>
         </div>
 
-        <!-- Controls: Search, Toggle -->
-        <div class="mb-8 p-4 bg-gray-900 rounded-lg shadow-md flex flex-col md:flex-row gap-4 items-center justify-center">
-            <div class="relative w-full md:w-auto flex-grow">
-                <input type="text" id="search-box" placeholder="Search by tournament name..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 bg-gray-700 text-white border-gray-600 placeholder-gray-400 ok-blue-focus ok-blue-border">
-            </div>
-            <div class="relative w-full md:w-auto">
-                <select id="city-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 bg-gray-700 text-white border-gray-600 ok-blue-focus ok-blue-border">
-                    <option value="">All Cities</option>
-                    <option value="Oklahoma City">Oklahoma City</option>
-                    <option value="Tulsa">Tulsa</option>
-                    <option value="Norman">Norman</option>
-                    <option value="Lawton">Lawton</option>
-                    <option value="Broken Arrow">Broken Arrow</option>
-                    <option value="Edmond">Edmond</option>
-                </select>
-            </div>
-            <div class="flex items-center justify-center">
-                <label for="past-events-toggle" class="mr-3 text-gray-300">Show Past Tournaments</label>
-                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                    <input type="checkbox" name="toggle" id="past-events-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-gray-700 border-4 appearance-none cursor-pointer"/>
-                    <label for="past-events-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
-                </div>
-            </div>
-        </div>
-
+        <div id="controls-container" class="mb-8 p-4 bg-gray-900 rounded-lg shadow-md flex flex-col md:flex-row gap-4 items-center justify-center"></div>
         <div id="loading" class="text-center"><div class="loader"></div></div>
-
-        <div id="tournaments-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[400px]"></div>
-
-        <div id="error" class="hidden text-center text-red-500 mt-8"></div>
-        
-        <!-- Pagination -->
-        <div id="pagination-controls" class="flex justify-center items-center mt-12 gap-4">
-            <button id="prev-button" class="ok-blue ok-blue-hover text-white font-semibold px-6 py-2 rounded-lg transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">Previous</button>
-            <span id="page-indicator" class="text-gray-300 font-medium">Page 1</span>
-            <button id="next-button" class="ok-blue ok-blue-hover text-white font-semibold px-6 py-2 rounded-lg transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">Next</button>
-        </div>
+        <div id="tournaments-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+        <div id="pagination-controls" class="flex justify-center items-center mt-12 gap-4"></div>
     </div>
 
-    <footer class="text-center py-6 mt-12 bg-gray-900 rounded-lg shadow-md border-t border-gray-700">
-        <div class="mb-4">
-            <a href="https://discordapp.com/invite/ycZbHSz" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-lg ok-blue-text hover:text-indigo-400 transition-colors">
-                <img src="images/discord.png" class="w-6 h-6" alt="Discord Icon">
-                Join the Oklahoma Smash Discord
-            </a>
-        </div>
-        <p class="text-gray-400">Powered by the <a href="https://start.gg/dev" target="_blank" class="ok-blue-text hover:underline">start.gg API</a></p>
-    </footer>
+    <footer class="text-center py-6 mt-12 bg-gray-900 rounded-lg shadow-md border-t border-gray-700"></footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM Elements ---
-            const tournamentsList = document.getElementById('tournaments-list');
-            const loading = document.getElementById('loading');
-            const error = document.getElementById('error');
-            const searchBox = document.getElementById('search-box');
-            const cityFilter = document.getElementById('city-filter');
-            const pastEventsToggle = document.getElementById('past-events-toggle');
-            const prevButton = document.getElementById('prev-button');
-            const nextButton = document.getElementById('next-button');
-            const pageIndicator = document.getElementById('page-indicator');
-            const paginationControls = document.getElementById('pagination-controls');
-            const gameTabsContainer = document.getElementById('game-tabs');
-            const featuredContainer = document.getElementById('featured-tournament');
-
-            // --- API & State ---
-            const apiKey = 'd962f418dd0489a80b44305d874f673d';
-            let currentPage = 1;
-            let totalPages = 1;
-            let searchTerm = '';
-            let activeCity = '';
-            let showPast = false;
-            let activeGameId = 1386;
-            let debounceTimer;
-            let allTournaments = []; // Cache for current view
-
-            // --- GraphQL Query ---
+            const state = {
+                apiKey: 'd962f418dd0489a80b44305d874f673d',
+                currentPage: 1,
+                totalPages: 1,
+                activeGameId: 1386,
+                tournaments: [],
+                theme: localStorage.getItem('theme') || 'dark',
+                searchTerm: '',
+                activeCity: '',
+                showPast: false,
+                debounceTimer: null
+            };
+            
             const graphqlQuery = `
                 query TournamentsByState($perPage: Int!, $page: Int!, $filter: TournamentPageFilter) {
-                  tournaments(query: {
-                    perPage: $perPage,
-                    page: $page,
-                    filter: $filter
-                  }) {
-                    pageInfo {
-                      totalPages
-                      page
-                    }
+                  tournaments(query: { perPage: $perPage, page: $page, filter: $filter }) {
+                    pageInfo { totalPages page }
                     nodes {
-                      id
-                      name
-                      slug
-                      startAt
-                      endAt
-                      city
-                      venueAddress
-                      registrationClosesAt
-                      images(type: "banner") {
-                        url
-                      }
+                      id name slug startAt endAt city venueAddress registrationClosesAt
+                      participants(query: {perPage: 1}) { pageInfo { total } }
+                      images(type: "banner") { url }
                       events(filter: { videogameId: [$videogameId] }) {
-                        id
-                        slug
-                        name
-                        standings(query: { perPage: 1, page: 1 }) {
-                          nodes {
-                            placement
-                            entrant {
-                              id
-                              name
-                            }
-                          }
-                        }
+                        id slug name
                       }
                     }
                   }
                 }
             `;
             
-            // --- Fetch Functions ---
             const fetchTournaments = async (isFeatured = false) => {
+                const loadingEl = document.getElementById('loading');
+                const listEl = document.getElementById('tournaments-list');
+                const paginationEl = document.getElementById('pagination-controls');
+                
                 if (!isFeatured) {
-                    loading.style.display = 'block';
-                    tournamentsList.innerHTML = '';
-                    error.classList.add('hidden');
-                    paginationControls.style.visibility = 'hidden';
+                    loadingEl.style.display = 'block';
+                    listEl.innerHTML = '';
+                    paginationEl.innerHTML = '';
                 }
 
                 const timestamp = Math.floor(Date.now() / 1000);
                 let filter = {
                     addrState: "OK",
-                    videogameIds: [activeGameId] 
+                    videogameIds: [state.activeGameId] 
                 };
-
-                if (activeCity) filter.city = activeCity;
-                if (searchTerm && !isFeatured) filter.name = searchTerm;
                 
-                if (showPast && !isFeatured) {
+                // Don't filter by name/city for featured event
+                if (!isFeatured) {
+                    if (state.searchTerm) filter.name = state.searchTerm;
+                }
+                
+                if (state.showPast && !isFeatured) {
                     filter.beforeDate = timestamp;
                 } else {
                     filter.afterDate = timestamp;
                 }
 
-                const queryWithGameId = graphqlQuery.replace('$videogameId', activeGameId);
+                const queryWithGameId = graphqlQuery.replace('$videogameId', state.activeGameId);
                 const variables = {
-                    perPage: isFeatured ? 1 : 12,
-                    page: isFeatured ? 1 : currentPage,
+                    perPage: isFeatured ? 1 : 50, // Fetch more for client-side city filtering
+                    page: isFeatured ? 1 : state.currentPage,
                     filter: filter
                 };
 
@@ -302,48 +242,50 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${apiKey}`,
+                            'Authorization': `Bearer ${state.apiKey}`,
                         },
-                        body: JSON.stringify({
-                            query: queryWithGameId,
-                            variables: variables
-                        }),
+                        body: JSON.stringify({ query: queryWithGameId, variables: variables }),
                     });
 
                     const data = await response.json();
-                    
                     if (data.errors) throw new Error(data.errors[0].message);
                     
-                    const tournaments = data.data.tournaments.nodes;
+                    let tournaments = data.data.tournaments.nodes;
                     
                     if (isFeatured) {
-                        if(tournaments.length > 0) renderFeaturedTournament(tournaments[0]);
-                    } else {
-                        loading.style.display = 'none';
-                        allTournaments = tournaments; // Cache the tournaments
-                        const pageInfo = data.data.tournaments.pageInfo;
-                        totalPages = pageInfo.totalPages || 1;
-
-                        if (tournaments.length === 0) {
-                            tournamentsList.innerHTML = `<p class="text-center col-span-full text-gray-400">No tournaments found for this game with the current filters.</p>`;
-                        } else {
-                            renderTournaments(tournaments);
-                        }
-                        updatePagination();
+                         if(tournaments.length > 0) renderFeaturedTournament(tournaments[0]);
+                         return;
+                    } 
+                    
+                    // Client-side city filter
+                    if (state.activeCity) {
+                        tournaments = tournaments.filter(t => t.city === state.activeCity);
                     }
+
+                    loadingEl.style.display = 'none';
+                    state.tournaments = tournaments;
+                    const pageInfo = data.data.tournaments.pageInfo;
+                    state.totalPages = pageInfo.totalPages || 1;
+
+                    if (tournaments.length === 0) {
+                        listEl.innerHTML = `<p class="text-center col-span-full text-gray-400">No tournaments found for this game with the current filters.</p>`;
+                    } else {
+                        renderTournaments();
+                    }
+                    // Disable pagination if city is selected as we're not fetching all pages
+                    if(!state.activeCity) updatePagination(pageInfo);
 
                 } catch (err) {
                     console.error('Fetch error:', err);
                     if (!isFeatured) {
-                        loading.style.display = 'none';
-                        error.classList.remove('hidden');
-                        error.textContent = `Error: ${err.message}`;
+                        loadingEl.style.display = 'none';
+                        listEl.innerHTML = `<p class="text-center col-span-full text-red-400">Error: ${err.message}</p>`;
                     }
                 }
             };
             
-            // --- Render Functions ---
             const renderFeaturedTournament = (tournament) => {
+                const featuredContainer = document.getElementById('featured-tournament');
                 const imageUrl = tournament.images.length > 0 ? tournament.images[0].url : `https://placehold.co/1200x400/111827/4F46E5?text=Featured+Event`;
                 const startDate = new Date(tournament.startAt * 1000);
                 const formattedDate = startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
@@ -365,178 +307,159 @@
                 `;
             };
 
-            const renderTournaments = (tournaments) => {
-                tournamentsList.innerHTML = ''; 
-                tournaments.forEach((tournament, index) => {
-                    const card = document.createElement('div');
-                    card.className = 'tournament-card rounded-lg shadow-md overflow-hidden';
-                    card.dataset.tournamentId = tournament.id; // Add ID for calendar lookup
+            const renderTournaments = () => {
+                const listEl = document.getElementById('tournaments-list');
+                listEl.innerHTML = '';
+                state.tournaments.forEach((tournament, index) => {
+                    const cardContainer = document.createElement('div');
+                    cardContainer.className = 'card-container';
+                    cardContainer.dataset.id = `tournament-${tournament.id}`;
+
+                    const flipper = document.createElement('div');
+                    flipper.className = 'tournament-card-flipper';
+                    
+                    const cardFront = document.createElement('div');
+                    cardFront.className = 'card-face';
                     const imageUrl = tournament.images.length > 0 ? tournament.images[0].url : `https://placehold.co/600x400/374151/E5E7EB?text=${encodeURIComponent(tournament.name)}`;
                     const startDate = new Date(tournament.startAt * 1000);
                     const formattedDate = startDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                     const registrationOpen = tournament.registrationClosesAt ? new Date(tournament.registrationClosesAt * 1000) > new Date() : true;
-
-                    let winnerHTML = '';
-                    if (showPast) {
-                        const winner = tournament.events?.[0]?.standings?.nodes?.[0];
-                        if (winner) {
-                            const entrantName = winner.entrant.name;
-                            const nameParts = entrantName.split('|').map(part => part.trim());
-                            let styledName = (nameParts.length > 1)
-                                ? `<span class="font-medium text-gray-400">${nameParts[0]}</span> <span class="font-bold text-gray-100">${nameParts[1]}</span>`
-                                : `<span class="font-bold text-gray-100">${entrantName}</span>`;
-                            winnerHTML = `<p class="text-gray-300 mb-4"><span class="font-semibold text-gray-200">Winner:</span> ${styledName}</p>`;
-                        } else {
-                            winnerHTML = `<p class="text-gray-300 mb-4"><span class="font-semibold text-gray-200">Winner:</span> TBD</p>`;
-                        }
-                    }
-
-                    card.innerHTML = `
+                    
+                    cardFront.innerHTML = `
                         <div class="image-container">
                             <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer">
                                 <img src="${imageUrl}" alt="${tournament.name}" class="w-full h-48 object-cover banner-image" onerror="this.onerror=null;this.src='https://placehold.co/600x400/374151/E5E7EB?text=Image+Not+Found';">
                             </a>
                         </div>
-                        <div class="p-6">
-                            <h2 class="text-xl font-bold text-gray-100 mb-2 h-14 overflow-hidden">${tournament.name}</h2>
-                            <p class="text-gray-400 mb-2"><span class="font-semibold text-gray-300">Date:</span> ${formattedDate}</p>
-                            <p class="text-gray-400 mb-4"><span class="font-semibold text-gray-300">Location:</span> ${tournament.city || 'TBA'}</p>
-                            ${winnerHTML}
-                            <div class="flex items-center justify-between">
-                                <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer" class="inline-block bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm">Details</a>
-                                ${registrationOpen && !showPast ? `<a href="https://start.gg/${tournament.slug}/register" target="_blank" class="inline-block ok-blue ok-blue-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm">Register</a>` : ''}
-                                <div class="relative flex gap-2">
-                                    <button class="calendar-button" title="Add to Calendar">
-                                        <svg class="w-6 h-6 text-gray-400 hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                    </button>
-                                    <button class="share-button" title="Share Tournament">
-                                        <svg class="w-6 h-6 text-gray-400 hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
-                                    </button>
-                                    <div class="share-popover"></div>
-                                </div>
+                        <div class="p-6 flex flex-col flex-grow">
+                            <h2 class="text-xl font-bold mb-2 h-14 overflow-hidden" style="color: var(--text-color-primary);">${tournament.name}</h2>
+                            <p class="mb-2" style="color: var(--text-color-secondary);"><span class="font-semibold" style="color: var(--text-color-primary);">Date:</span> ${formattedDate}</p>
+                            <p class="mb-4" style="color: var(--text-color-secondary);"><span class="font-semibold" style="color: var(--text-color-primary);">Location:</span> ${tournament.city || 'TBA'}</p>
+                            <div class="mt-auto flex items-center justify-between">
+                                <a href="https://start.gg/${tournament.slug}/register" target="_blank" class="inline-block ok-blue ok-blue-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm ${registrationOpen && !state.showPast ? '' : 'hidden'}">Register</a>
                             </div>
+                        </div>`;
+                    
+                    const cardBack = document.createElement('div');
+                    cardBack.className = 'card-face card-back';
+                    cardBack.innerHTML = `
+                        <div>
+                            <h3>Entrants</h3>
+                            <p>${tournament.participants.pageInfo.total || 'N/A'}</p>
                         </div>
+                         <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer" class="mt-4 inline-block bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm">View Details</a>
                     `;
-                    card.style.animationDelay = `${index * 100}ms`;
-                    card.classList.add('card-enter-animation');
-                    tournamentsList.appendChild(card);
+
+                    flipper.appendChild(cardFront);
+                    flipper.appendChild(cardBack);
+                    cardContainer.appendChild(flipper);
+                    listEl.appendChild(cardContainer);
+                    
+                    setTimeout(() => { flipper.style.opacity = 1; flipper.classList.add('card-enter-animation'); }, index * 100);
                 });
             };
 
-            const updatePagination = () => {
-                paginationControls.style.visibility = (totalPages > 1) ? 'visible' : 'hidden';
-                pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
-                prevButton.disabled = currentPage === 1;
-                nextButton.disabled = currentPage === totalPages;
+            const updatePagination = (pageInfo) => {
+                const paginationEl = document.getElementById('pagination-controls');
+                paginationEl.innerHTML = '';
+                if (pageInfo && pageInfo.totalPages > 1) {
+                    state.totalPages = pageInfo.totalPages;
+                    const prevButton = document.createElement('button');
+                    prevButton.textContent = 'Previous';
+                    prevButton.className = "ok-blue ok-blue-hover text-white font-semibold px-6 py-2 rounded-lg transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed";
+                    prevButton.disabled = state.currentPage === 1;
+                    prevButton.addEventListener('click', () => { if (state.currentPage > 1) { state.currentPage--; fetchTournaments(); } });
+                    
+                    const pageIndicator = document.createElement('span');
+                    pageIndicator.className = 'text-gray-300 font-medium';
+                    pageIndicator.textContent = `Page ${state.currentPage} of ${state.totalPages}`;
+
+                    const nextButton = document.createElement('button');
+                    nextButton.textContent = 'Next';
+                    nextButton.className = "ok-blue ok-blue-hover text-white font-semibold px-6 py-2 rounded-lg transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed";
+                    nextButton.disabled = state.currentPage === state.totalPages;
+                    nextButton.addEventListener('click', () => { if (state.currentPage < state.totalPages) { state.currentPage++; fetchTournaments(); } });
+
+                    paginationEl.appendChild(prevButton);
+                    paginationEl.appendChild(pageIndicator);
+                    paginationEl.appendChild(nextButton);
+                }
+            };
+            
+            const applyTheme = (theme) => {
+                const themeToggle = document.getElementById('theme-toggle');
+                const sunIcon = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5h2.25a.75.75 0 01.75.75zM12 18.75a.75.75 0 01-.75.75v2.25a.75.75 0 011.5 0v-2.25a.75.75 0 01-.75-.75zM4.5 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H5.25a.75.75 0 01-.75-.75zM17.657 6.343a.75.75 0 010 1.06l-1.591 1.591a.75.75 0 11-1.06-1.06l1.591-1.591a.75.75 0 011.06 0zm-11.314 0a.75.75 0 011.06 0l1.591 1.591a.75.75 0 11-1.06 1.06L6.343 7.404a.75.75 0 010-1.06zm11.314 11.314a.75.75 0 01-1.06 0l-1.591-1.591a.75.75 0 111.06-1.06l1.591 1.591a.75.75 0 010 1.06zM7.404 17.657a.75.75 0 01-1.06 0l-1.591-1.591a.75.75 0 011.06-1.06l1.591 1.591a.75.75 0 010 1.06z"></path></svg>`;
+                const moonIcon = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-3.463 1.72-6.57 4.43-8.44a.75.75 0 01.818.162z" clip-rule="evenodd"></path></svg>`;
+                
+                document.body.classList.toggle('light-theme', theme === 'light');
+                themeToggle.innerHTML = theme === 'light' ? moonIcon : sunIcon;
             };
 
-            // --- Calendar File Generation ---
-            function createIcsFile(tournament) {
-                const startDate = new Date(tournament.startAt * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-                const endDate = new Date(tournament.endAt * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-                const url = `https://start.gg/${tournament.slug}`;
+            function initializePage() {
+                document.getElementById('controls-container').innerHTML = `
+                    <div class="relative w-full md:w-auto flex-grow">
+                        <input type="text" id="search-box" placeholder="Search by tournament name..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 bg-gray-700 text-white border-gray-600 placeholder-gray-400 ok-blue-focus ok-blue-border">
+                    </div>
+                    <div class="relative w-full md:w-auto">
+                        <select id="city-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 bg-gray-700 text-white border-gray-600 ok-blue-focus ok-blue-border">
+                            <option value="">All Cities</option>
+                            <option value="Oklahoma City">Oklahoma City</option><option value="Tulsa">Tulsa</option><option value="Norman">Norman</option><option value="Lawton">Lawton</option><option value="Broken Arrow">Broken Arrow</option><option value="Edmond">Edmond</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center justify-center">
+                        <label for="past-events-toggle" class="mr-3 text-gray-300">Show Past Tournaments</label>
+                        <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="past-events-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-gray-700 border-4 appearance-none cursor-pointer"/>
+                            <label for="past-events-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+                        </div>
+                    </div>`;
+                
+                document.querySelector('footer').innerHTML = `
+                    <div class="mb-4">
+                        <a href="https://discordapp.com/invite/ycZbHSz" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-lg ok-blue-text hover:text-indigo-400 transition-colors">
+                            <img src="images/discord.png" class="w-6 h-6" alt="Discord Icon" style="filter: invert(1);">
+                            Join the Oklahoma Smash Discord
+                        </a>
+                    </div>
+                    <p class="text-gray-400">Powered by the <a href="https://start.gg/dev" target="_blank" class="ok-blue-text hover:underline">start.gg API</a></p>`;
 
-                const icsContent = [
-                    'BEGIN:VCALENDAR',
-                    'VERSION:2.0',
-                    'PRODID:-//OklahomaSmash//NONSGML v1.0//EN',
-                    'BEGIN:VEVENT',
-                    `UID:${tournament.id}@oklahomasmash.com`,
-                    `DTSTAMP:${startDate}`,
-                    `DTSTART:${startDate}`,
-                    `DTEND:${endDate}`,
-                    `SUMMARY:${tournament.name}`,
-                    `DESCRIPTION:View tournament details at ${url}`,
-                    `LOCATION:${tournament.venueAddress || tournament.city}`,
-                    'END:VEVENT',
-                    'END:VCALENDAR'
-                ].join('\r\n');
+                applyTheme(state.theme);
+                
+                document.getElementById('theme-toggle').addEventListener('click', () => {
+                    state.theme = (state.theme === 'dark') ? 'light' : 'dark';
+                    localStorage.setItem('theme', state.theme);
+                    applyTheme(state.theme);
+                });
 
-                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `${tournament.name}.ics`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                const handleFilterChange = () => {
+                    state.searchTerm = document.getElementById('search-box').value;
+                    state.activeCity = document.getElementById('city-filter').value;
+                    state.showPast = document.getElementById('past-events-toggle').checked;
+                    state.currentPage = 1;
+                    fetchTournaments();
+                };
+
+                document.getElementById('search-box').addEventListener('input', () => { clearTimeout(state.debounceTimer); state.debounceTimer = setTimeout(handleFilterChange, 500); });
+                document.getElementById('city-filter').addEventListener('change', handleFilterChange);
+                document.getElementById('past-events-toggle').addEventListener('change', handleFilterChange);
+                
+                document.getElementById('game-tabs').addEventListener('click', (e) => {
+                    const tab = e.target.closest('.game-tab');
+                    if (tab) {
+                        document.getElementById('game-tabs').querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        state.activeGameId = parseInt(tab.dataset.gameId, 10);
+                        state.currentPage = 1;
+                        fetchTournaments();
+                        fetchTournaments(true);
+                    }
+                });
+
+                fetchTournaments();
+                fetchTournaments(true);
             }
 
-            // --- Event Handlers ---
-            tournamentsList.addEventListener('click', (e) => {
-                const calendarButton = e.target.closest('.calendar-button');
-                const shareButton = e.target.closest('.share-button');
-                
-                if (calendarButton) {
-                    const card = e.target.closest('.tournament-card');
-                    const tournamentId = parseInt(card.dataset.tournamentId, 10);
-                    const tournament = allTournaments.find(t => t.id === tournamentId);
-                    if (tournament) createIcsFile(tournament);
-                }
-
-                if (shareButton) {
-                    const popover = shareButton.nextElementSibling;
-                    const tournamentLink = `https://start.gg/${allTournaments.find(t => t.id === parseInt(e.target.closest('.tournament-card').dataset.tournamentId)).slug}`;
-                    popover.style.display = popover.style.display === 'flex' ? 'none' : 'flex';
-                    popover.innerHTML = `
-                        <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(tournamentLink)}&text=Check out this tournament!" target="_blank" class="text-sm text-gray-300 hover:text-indigo-400">Twitter</a>
-                        <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(tournamentLink)}" target="_blank" class="text-sm text-gray-300 hover:text-indigo-400">Facebook</a>
-                        <button class="copy-link-button text-sm text-gray-300 hover:text-indigo-400" data-link="${tournamentLink}">Copy Link</button>
-                    `;
-                }
-            });
-            
-            document.body.addEventListener('click', e => {
-                if(e.target.closest('.share-button')) return;
-                if(!e.target.closest('.share-popover')) {
-                    document.querySelectorAll('.share-popover').forEach(p => p.style.display = 'none');
-                }
-                if(e.target.classList.contains('copy-link-button')) {
-                    const linkToCopy = e.target.dataset.link;
-                    const textArea = document.createElement("textarea");
-                    textArea.value = linkToCopy;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    try {
-                        document.execCommand('copy');
-                        e.target.textContent = 'Copied!';
-                    } catch (err) {
-                        console.error('Fallback: Oops, unable to copy', err);
-                        e.target.textContent = 'Error!';
-                    }
-                    document.body.removeChild(textArea);
-                    setTimeout(() => e.target.textContent = 'Copy Link', 2000);
-                }
-            });
-
-            gameTabsContainer.addEventListener('click', (e) => {
-                const tab = e.target.closest('.game-tab');
-                if (tab) {
-                    gameTabsContainer.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    activeGameId = parseInt(tab.dataset.gameId, 10);
-                    currentPage = 1;
-                    fetchTournaments();
-                    fetchTournaments(true);
-                }
-            });
-            
-            const handleFilterChange = () => {
-                searchTerm = searchBox.value;
-                activeCity = cityFilter.value;
-                showPast = pastEventsToggle.checked;
-                currentPage = 1;
-                fetchTournaments();
-            };
-
-            searchBox.addEventListener('input', () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(handleFilterChange, 500); });
-            cityFilter.addEventListener('change', handleFilterChange);
-            pastEventsToggle.addEventListener('change', handleFilterChange);
-            prevButton.addEventListener('click', () => { if (currentPage > 1) { currentPage--; fetchTournaments(); } });
-            nextButton.addEventListener('click', () => { if (currentPage < totalPages) { currentPage++; fetchTournaments(); } });
-
-            // --- Initial Load ---
-            fetchTournaments();
-            fetchTournaments(true);
+            initializePage();
         });
     </script>
 </body>
