@@ -17,13 +17,14 @@
             font-family: 'Anton', sans-serif;
         }
         .tournament-card {
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
             background-color: #111827; /* gray-900 */
             border: 1px solid #374151; /* gray-700 */
+            opacity: 0; /* Start hidden for animation */
         }
         .tournament-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 0 15px rgba(79, 70, 229, 0.3); /* Indigo shadow */
+            box-shadow: 0 0 20px rgba(79, 70, 229, 0.4); /* Brighter indigo shadow */
         }
         /* Custom colors for the new theme */
         .ok-blue { background-color: #4F46E5; } /* indigo-600 */
@@ -53,6 +54,21 @@
         .game-tab:not(.active):hover {
             color: #A5B4FC; /* indigo-300 */
         }
+
+        /* Animation for cards */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .card-enter-animation {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
     </style>
 </head>
 <body class="text-gray-200">
@@ -68,7 +84,7 @@
             <div class="game-tab active" data-game-id="1386">Ultimate</div>
             <div class="game-tab" data-game-id="1">Melee</div>
             <div class="game-tab" data-game-id="33602">P+</div>
-            <div class="game-tab" data-game-id="17278">Other Fighters</div>
+            <div class="game-tab" data-game-id="18070">Street Fighter 6</div>
         </div>
 
         <!-- Controls: Search, Toggle -->
@@ -195,7 +211,6 @@
                     filter.afterDate = timestamp;
                 }
 
-                // The query needs to be slightly different to include the winner info correctly
                 const queryWithGameId = graphqlQuery.replace('$videogameId', activeGameId);
 
                 const variables = {
@@ -246,7 +261,7 @@
             // --- Render Functions ---
             const renderTournaments = (tournaments) => {
                 tournamentsList.innerHTML = ''; 
-                tournaments.forEach(tournament => {
+                tournaments.forEach((tournament, index) => {
                     const tournamentCard = document.createElement('div');
                     tournamentCard.className = 'tournament-card rounded-lg shadow-md overflow-hidden';
                     const imageUrl = tournament.images.length > 0 ? tournament.images[0].url : `https://placehold.co/600x400/374151/E5E7EB?text=${encodeURIComponent(tournament.name)}`;
@@ -286,6 +301,10 @@
                             </a>
                         </div>
                     `;
+                    // Add animation with a stagger
+                    tournamentCard.style.animationDelay = `${index * 100}ms`;
+                    tournamentCard.classList.add('card-enter-animation');
+                    
                     tournamentsList.appendChild(tournamentCard);
                 });
             };
@@ -304,11 +323,8 @@
             // --- Event Listeners ---
             gameTabsContainer.addEventListener('click', (e) => {
                 if (e.target.classList.contains('game-tab')) {
-                    // Remove active class from all tabs
                     gameTabsContainer.querySelectorAll('.game-tab').forEach(tab => tab.classList.remove('active'));
-                    // Add active class to the clicked tab
                     e.target.classList.add('active');
-                    // Update the active game ID and fetch new data
                     activeGameId = parseInt(e.target.dataset.gameId, 10);
                     currentPage = 1;
                     fetchTournaments();
