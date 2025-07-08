@@ -66,6 +66,16 @@
         .game-tab:not(.active):hover {
             color: #A5B4FC; /* indigo-300 */
         }
+        /* Custom style for icon glows */
+        .ultimate-icon-glow {
+            filter: invert(1) drop-shadow(0 0 5px #ef4444); /* Red glow */
+        }
+        .melee-icon-glow {
+            filter: invert(1) drop-shadow(0 0 6px #a78bfa); /* Purple glow */
+        }
+        .p-plus-icon {
+             filter: drop-shadow(0 0 5px #00ff00);
+        }
 
         /* Animation for cards */
         @keyframes fadeInUp {
@@ -130,9 +140,9 @@
         <!-- Game Tabs -->
         <div id="game-tabs" class="flex flex-wrap justify-center items-center gap-4 mb-8 text-gray-400 border-b border-gray-700">
             <!-- Corrected image paths -->
-            <div class="game-tab active" data-game-id="1386"><img src="images/hd-super-smash-bros-ultimate-black-logo-png-701751694779224ggacve5ion.png" class="h-5" alt="Ultimate Icon" style="filter: invert(1);">Ultimate</div>
-            <div class="game-tab" data-game-id="1"><img src="images/super_smash_bros__melee_high_resolution_logo_by_nirbion_dbdd7jv-pre.png" class="h-5" alt="Melee Icon" style="filter: invert(1);">Melee</div>
-            <div class="game-tab" data-game-id="33602"><img src="images/p-plus-logo.png" class="h-5" alt="P+ Icon" style="filter: invert(1);">P+</div>
+            <div class="game-tab active" data-game-id="1386"><img src="images/hd-super-smash-bros-ultimate-black-logo-png-701751694779224ggacve5ion.png" class="h-5 ultimate-icon-glow" alt="Ultimate Icon">Ultimate</div>
+            <div class="game-tab" data-game-id="1"><img src="images/super_smash_bros__melee_high_resolution_logo_by_nirbion_dbdd7jv-pre.png" class="h-5 melee-icon-glow" alt="Melee Icon">Melee</div>
+            <div class="game-tab" data-game-id="33602"><img src="images/p-plus-logo.png" class="h-5 p-plus-icon" alt="P+ Icon">P+</div>
             <div class="game-tab" data-game-id="18070">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                 Other Fighters
