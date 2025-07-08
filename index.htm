@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -15,6 +15,15 @@
         }
         .font-anton {
             font-family: 'Anton', sans-serif;
+        }
+        .image-container {
+            overflow: hidden;
+        }
+        .tournament-card .banner-image {
+            transition: transform 0.4s ease;
+        }
+        .tournament-card:hover .banner-image {
+            transform: scale(1.05);
         }
         .tournament-card {
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
@@ -46,6 +55,9 @@
             padding: 8px 16px;
             border-bottom: 2px solid transparent;
             transition: all 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .game-tab.active {
             color: #818CF8; /* indigo-400 */
@@ -69,6 +81,39 @@
         .card-enter-animation {
             animation: fadeInUp 0.5s ease-out forwards;
         }
+
+        /* Custom Loader */
+        .loader {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 5px solid #374151; /* gray-700 */
+            border-top-color: #4F46E5; /* indigo-600 */
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        /* Share Popover */
+        .share-popover {
+            position: absolute;
+            bottom: 50px;
+            right: 0;
+            background-color: #1F2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: none; /* Hidden by default */
+        }
     </style>
 </head>
 <body class="text-gray-200">
@@ -79,18 +124,33 @@
             <p class="text-lg text-gray-400 mt-2 font-light">The official hub for OK Smash tournaments.</p>
         </header>
 
+        <!-- Featured Tournament Section -->
+        <div id="featured-tournament" class="mb-12"></div>
+
         <!-- Game Tabs -->
-        <div id="game-tabs" class="flex justify-center items-center gap-4 mb-8 text-gray-400 border-b border-gray-700">
-            <div class="game-tab active" data-game-id="1386">Ultimate</div>
-            <div class="game-tab" data-game-id="1">Melee</div>
-            <div class="game-tab" data-game-id="33602">P+</div>
-            <div class="game-tab" data-game-id="18070">Street Fighter 6</div>
+        <div id="game-tabs" class="flex flex-wrap justify-center items-center gap-4 mb-8 text-gray-400 border-b border-gray-700">
+            <!-- Icons now point to a local 'images' folder -->
+            <div class="game-tab active" data-game-id="1386"><img src="images/smashball.gif" class="w-5 h-5" alt="Ultimate Icon">Ultimate</div>
+            <div class="game-tab" data-game-id="1"><img src="images/melee.svg" class="w-5 h-5" alt="Melee Icon">Melee</div>
+            <div class="game-tab" data-game-id="33602"><img src="images/p-plus.svg" class="w-5 h-5" alt="P+ Icon">P+</div>
+            <div class="game-tab" data-game-id="18070"><img src="images/fighters.svg" class="w-5 h-5" alt="Fighters Icon">Other Fighters</div>
         </div>
 
         <!-- Controls: Search, Toggle -->
         <div class="mb-8 p-4 bg-gray-900 rounded-lg shadow-md flex flex-col md:flex-row gap-4 items-center justify-center">
-            <div class="relative w-full md:w-1/2">
+            <div class="relative w-full md:w-auto flex-grow">
                 <input type="text" id="search-box" placeholder="Search by tournament name..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 bg-gray-700 text-white border-gray-600 placeholder-gray-400 ok-blue-focus ok-blue-border">
+            </div>
+            <div class="relative w-full md:w-auto">
+                <select id="city-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 bg-gray-700 text-white border-gray-600 ok-blue-focus ok-blue-border">
+                    <option value="">All Cities</option>
+                    <option value="Oklahoma City">Oklahoma City</option>
+                    <option value="Tulsa">Tulsa</option>
+                    <option value="Norman">Norman</option>
+                    <option value="Lawton">Lawton</option>
+                    <option value="Broken Arrow">Broken Arrow</option>
+                    <option value="Edmond">Edmond</option>
+                </select>
             </div>
             <div class="flex items-center justify-center">
                 <label for="past-events-toggle" class="mr-3 text-gray-300">Show Past Tournaments</label>
@@ -101,17 +161,11 @@
             </div>
         </div>
 
-        <div id="loading" class="text-center">
-            <p class="text-lg text-gray-300">Loading tournaments...</p>
-        </div>
+        <div id="loading" class="text-center"><div class="loader"></div></div>
 
-        <div id="tournaments-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[400px]">
-            <!-- Tournament cards will be inserted here -->
-        </div>
+        <div id="tournaments-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[400px]"></div>
 
-        <div id="error" class="hidden text-center text-red-500 mt-8">
-            <!-- Error messages will be shown here -->
-        </div>
+        <div id="error" class="hidden text-center text-red-500 mt-8"></div>
         
         <!-- Pagination -->
         <div id="pagination-controls" class="flex justify-center items-center mt-12 gap-4">
@@ -119,7 +173,6 @@
             <span id="page-indicator" class="text-gray-300 font-medium">Page 1</span>
             <button id="next-button" class="ok-blue ok-blue-hover text-white font-semibold px-6 py-2 rounded-lg transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">Next</button>
         </div>
-
     </div>
 
     <footer class="text-center py-6 mt-12 bg-gray-900 rounded-lg shadow-md border-t border-gray-700">
@@ -133,28 +186,32 @@
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
             const searchBox = document.getElementById('search-box');
+            const cityFilter = document.getElementById('city-filter');
             const pastEventsToggle = document.getElementById('past-events-toggle');
             const prevButton = document.getElementById('prev-button');
             const nextButton = document.getElementById('next-button');
             const pageIndicator = document.getElementById('page-indicator');
             const paginationControls = document.getElementById('pagination-controls');
             const gameTabsContainer = document.getElementById('game-tabs');
+            const featuredContainer = document.getElementById('featured-tournament');
 
             // --- API & State ---
             const apiKey = 'd962f418dd0489a80b44305d874f673d';
             let currentPage = 1;
             let totalPages = 1;
             let searchTerm = '';
+            let activeCity = '';
             let showPast = false;
-            let activeGameId = 1386; // Default to Ultimate
+            let activeGameId = 1386;
             let debounceTimer;
+            let allTournaments = []; // Cache for current view
 
             // --- GraphQL Query ---
             const graphqlQuery = `
                 query TournamentsByState($perPage: Int!, $page: Int!, $filter: TournamentPageFilter) {
                   tournaments(query: {
-                    perPage: $perPage
-                    page: $page
+                    perPage: $perPage,
+                    page: $page,
                     filter: $filter
                   }) {
                     pageInfo {
@@ -166,12 +223,16 @@
                       name
                       slug
                       startAt
+                      endAt
                       city
-                      images {
+                      venueAddress
+                      registrationClosesAt
+                      images(type: "banner") {
                         url
                       }
                       events(filter: { videogameId: [$videogameId] }) {
                         id
+                        slug
                         name
                         standings(query: { perPage: 1, page: 1 }) {
                           nodes {
@@ -188,12 +249,14 @@
                 }
             `;
             
-            // --- Main Fetch Function ---
-            const fetchTournaments = async () => {
-                loading.style.display = 'block';
-                tournamentsList.innerHTML = '';
-                error.classList.add('hidden');
-                paginationControls.style.visibility = 'hidden';
+            // --- Fetch Functions ---
+            const fetchTournaments = async (isFeatured = false) => {
+                if (!isFeatured) {
+                    loading.style.display = 'block';
+                    tournamentsList.innerHTML = '';
+                    error.classList.add('hidden');
+                    paginationControls.style.visibility = 'hidden';
+                }
 
                 const timestamp = Math.floor(Date.now() / 1000);
                 let filter = {
@@ -201,21 +264,19 @@
                     videogameIds: [activeGameId] 
                 };
 
-                if (searchTerm) {
-                    filter.name = searchTerm;
-                }
-
-                if (showPast) {
+                if (activeCity) filter.city = activeCity;
+                if (searchTerm && !isFeatured) filter.name = searchTerm;
+                
+                if (showPast && !isFeatured) {
                     filter.beforeDate = timestamp;
                 } else {
                     filter.afterDate = timestamp;
                 }
 
                 const queryWithGameId = graphqlQuery.replace('$videogameId', activeGameId);
-
                 const variables = {
-                    perPage: 12,
-                    page: currentPage,
+                    perPage: isFeatured ? 1 : 12,
+                    page: isFeatured ? 1 : currentPage,
                     filter: filter
                 };
 
@@ -233,40 +294,70 @@
                     });
 
                     const data = await response.json();
-                    loading.style.display = 'none';
-
-                    if (data.errors) {
-                        throw new Error(data.errors[0].message);
-                    }
+                    
+                    if (data.errors) throw new Error(data.errors[0].message);
                     
                     const tournaments = data.data.tournaments.nodes;
-                    const pageInfo = data.data.tournaments.pageInfo;
-                    totalPages = pageInfo.totalPages || 1;
-
-                    if (tournaments.length === 0) {
-                        tournamentsList.innerHTML = `<p class="text-center col-span-full text-gray-400">No tournaments found for this game with the current filters.</p>`;
+                    
+                    if (isFeatured) {
+                        if(tournaments.length > 0) renderFeaturedTournament(tournaments[0]);
                     } else {
-                        renderTournaments(tournaments);
+                        loading.style.display = 'none';
+                        allTournaments = tournaments; // Cache the tournaments
+                        const pageInfo = data.data.tournaments.pageInfo;
+                        totalPages = pageInfo.totalPages || 1;
+
+                        if (tournaments.length === 0) {
+                            tournamentsList.innerHTML = `<p class="text-center col-span-full text-gray-400">No tournaments found for this game with the current filters.</p>`;
+                        } else {
+                            renderTournaments(tournaments);
+                        }
+                        updatePagination();
                     }
-                    updatePagination();
 
                 } catch (err) {
                     console.error('Fetch error:', err);
-                    loading.style.display = 'none';
-                    error.classList.remove('hidden');
-                    error.textContent = `Error: ${err.message}`;
+                    if (!isFeatured) {
+                        loading.style.display = 'none';
+                        error.classList.remove('hidden');
+                        error.textContent = `Error: ${err.message}`;
+                    }
                 }
             };
             
             // --- Render Functions ---
+            const renderFeaturedTournament = (tournament) => {
+                const imageUrl = tournament.images.length > 0 ? tournament.images[0].url : `https://placehold.co/1200x400/111827/4F46E5?text=Featured+Event`;
+                const startDate = new Date(tournament.startAt * 1000);
+                const formattedDate = startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+                featuredContainer.innerHTML = `
+                    <div class="bg-gray-900 rounded-lg shadow-lg overflow-hidden border-2 border-indigo-500/50">
+                        <div class="md:flex">
+                            <div class="md:flex-shrink-0">
+                                <img class="h-48 w-full object-cover md:w-48" src="${imageUrl}" alt="${tournament.name}">
+                            </div>
+                            <div class="p-8">
+                                <div class="uppercase tracking-wide text-sm text-indigo-400 font-semibold">Featured Tournament</div>
+                                <a href="https://start.gg/${tournament.slug}" target="_blank" class="block mt-1 text-2xl leading-tight font-bold text-white hover:underline">${tournament.name}</a>
+                                <p class="mt-2 text-gray-400">${tournament.city} • ${formattedDate}</p>
+                                <a href="https://start.gg/${tournament.slug}/register" target="_blank" class="mt-4 inline-block ok-blue ok-blue-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors">Register Now</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            };
+
             const renderTournaments = (tournaments) => {
                 tournamentsList.innerHTML = ''; 
                 tournaments.forEach((tournament, index) => {
-                    const tournamentCard = document.createElement('div');
-                    tournamentCard.className = 'tournament-card rounded-lg shadow-md overflow-hidden';
+                    const card = document.createElement('div');
+                    card.className = 'tournament-card rounded-lg shadow-md overflow-hidden';
+                    card.dataset.tournamentId = tournament.id; // Add ID for calendar lookup
                     const imageUrl = tournament.images.length > 0 ? tournament.images[0].url : `https://placehold.co/600x400/374151/E5E7EB?text=${encodeURIComponent(tournament.name)}`;
                     const startDate = new Date(tournament.startAt * 1000);
                     const formattedDate = startDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    const registrationOpen = tournament.registrationClosesAt ? new Date(tournament.registrationClosesAt * 1000) > new Date() : true;
 
                     let winnerHTML = '';
                     if (showPast) {
@@ -274,96 +365,162 @@
                         if (winner) {
                             const entrantName = winner.entrant.name;
                             const nameParts = entrantName.split('|').map(part => part.trim());
-                            let styledName = '';
-
-                            if (nameParts.length > 1) {
-                                styledName = `<span class="font-medium text-gray-400">${nameParts[0]}</span> <span class="font-bold text-gray-100">${nameParts[1]}</span>`;
-                            } else {
-                                styledName = `<span class="font-bold text-gray-100">${entrantName}</span>`;
-                            }
+                            let styledName = (nameParts.length > 1)
+                                ? `<span class="font-medium text-gray-400">${nameParts[0]}</span> <span class="font-bold text-gray-100">${nameParts[1]}</span>`
+                                : `<span class="font-bold text-gray-100">${entrantName}</span>`;
                             winnerHTML = `<p class="text-gray-300 mb-4"><span class="font-semibold text-gray-200">Winner:</span> ${styledName}</p>`;
                         } else {
                             winnerHTML = `<p class="text-gray-300 mb-4"><span class="font-semibold text-gray-200">Winner:</span> TBD</p>`;
                         }
                     }
 
-                    tournamentCard.innerHTML = `
-                        <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer">
-                            <img src="${imageUrl}" alt="${tournament.name}" class="w-full h-48 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/600x400/374151/E5E7EB?text=Image+Not+Found';">
-                        </a>
+                    card.innerHTML = `
+                        <div class="image-container">
+                            <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer">
+                                <img src="${imageUrl}" alt="${tournament.name}" class="w-full h-48 object-cover banner-image" onerror="this.onerror=null;this.src='https://placehold.co/600x400/374151/E5E7EB?text=Image+Not+Found';">
+                            </a>
+                        </div>
                         <div class="p-6">
                             <h2 class="text-xl font-bold text-gray-100 mb-2 h-14 overflow-hidden">${tournament.name}</h2>
                             <p class="text-gray-400 mb-2"><span class="font-semibold text-gray-300">Date:</span> ${formattedDate}</p>
                             <p class="text-gray-400 mb-4"><span class="font-semibold text-gray-300">Location:</span> ${tournament.city || 'TBA'}</p>
                             ${winnerHTML}
-                            <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer" class="inline-block ok-blue ok-blue-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors">
-                                View Tournament
-                            </a>
+                            <div class="flex items-center justify-between">
+                                <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer" class="inline-block bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm">Details</a>
+                                ${registrationOpen && !showPast ? `<a href="https://start.gg/${tournament.slug}/register" target="_blank" class="inline-block ok-blue ok-blue-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm">Register</a>` : ''}
+                                <div class="relative flex gap-2">
+                                    <button class="calendar-button" title="Add to Calendar">
+                                        <svg class="w-6 h-6 text-gray-400 hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    </button>
+                                    <button class="share-button" title="Share Tournament">
+                                        <svg class="w-6 h-6 text-gray-400 hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
+                                    </button>
+                                    <div class="share-popover"></div>
+                                </div>
+                            </div>
                         </div>
                     `;
-                    // Add animation with a stagger
-                    tournamentCard.style.animationDelay = `${index * 100}ms`;
-                    tournamentCard.classList.add('card-enter-animation');
-                    
-                    tournamentsList.appendChild(tournamentCard);
+                    card.style.animationDelay = `${index * 100}ms`;
+                    card.classList.add('card-enter-animation');
+                    tournamentsList.appendChild(card);
                 });
             };
 
             const updatePagination = () => {
-                if (totalPages > 1) {
-                    paginationControls.style.visibility = 'visible';
-                    pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
-                    prevButton.disabled = currentPage === 1;
-                    nextButton.disabled = currentPage === totalPages;
-                } else {
-                    paginationControls.style.visibility = 'hidden';
-                }
+                paginationControls.style.visibility = (totalPages > 1) ? 'visible' : 'hidden';
+                pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+                prevButton.disabled = currentPage === 1;
+                nextButton.disabled = currentPage === totalPages;
             };
 
-            // --- Event Listeners ---
-            gameTabsContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('game-tab')) {
-                    gameTabsContainer.querySelectorAll('.game-tab').forEach(tab => tab.classList.remove('active'));
-                    e.target.classList.add('active');
-                    activeGameId = parseInt(e.target.dataset.gameId, 10);
-                    currentPage = 1;
-                    fetchTournaments();
+            // --- Calendar File Generation ---
+            function createIcsFile(tournament) {
+                const startDate = new Date(tournament.startAt * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+                const endDate = new Date(tournament.endAt * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+                const url = `https://start.gg/${tournament.slug}`;
+
+                const icsContent = [
+                    'BEGIN:VCALENDAR',
+                    'VERSION:2.0',
+                    'PRODID:-//OklahomaSmash//NONSGML v1.0//EN',
+                    'BEGIN:VEVENT',
+                    `UID:${tournament.id}@oklahomasmash.com`,
+                    `DTSTAMP:${startDate}`,
+                    `DTSTART:${startDate}`,
+                    `DTEND:${endDate}`,
+                    `SUMMARY:${tournament.name}`,
+                    `DESCRIPTION:View tournament details at ${url}`,
+                    `LOCATION:${tournament.venueAddress || tournament.city}`,
+                    'END:VEVENT',
+                    'END:VCALENDAR'
+                ].join('\r\n');
+
+                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `${tournament.name}.ics`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            // --- Event Handlers ---
+            tournamentsList.addEventListener('click', (e) => {
+                const calendarButton = e.target.closest('.calendar-button');
+                const shareButton = e.target.closest('.share-button');
+                
+                if (calendarButton) {
+                    const card = e.target.closest('.tournament-card');
+                    const tournamentId = parseInt(card.dataset.tournamentId, 10);
+                    const tournament = allTournaments.find(t => t.id === tournamentId);
+                    if (tournament) createIcsFile(tournament);
+                }
+
+                if (shareButton) {
+                    const popover = shareButton.nextElementSibling;
+                    const tournamentLink = `https://start.gg/${allTournaments.find(t => t.id === parseInt(e.target.closest('.tournament-card').dataset.tournamentId)).slug}`;
+                    popover.style.display = popover.style.display === 'flex' ? 'none' : 'flex';
+                    popover.innerHTML = `
+                        <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(tournamentLink)}&text=Check out this tournament!" target="_blank" class="text-sm text-gray-300 hover:text-indigo-400">Twitter</a>
+                        <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(tournamentLink)}" target="_blank" class="text-sm text-gray-300 hover:text-indigo-400">Facebook</a>
+                        <button class="copy-link-button text-sm text-gray-300 hover:text-indigo-400" data-link="${tournamentLink}">Copy Link</button>
+                    `;
+                }
+            });
+            
+            document.body.addEventListener('click', e => {
+                if(e.target.closest('.share-button')) return;
+                if(!e.target.closest('.share-popover')) {
+                    document.querySelectorAll('.share-popover').forEach(p => p.style.display = 'none');
+                }
+                if(e.target.classList.contains('copy-link-button')) {
+                    const linkToCopy = e.target.dataset.link;
+                    const textArea = document.createElement("textarea");
+                    textArea.value = linkToCopy;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        e.target.textContent = 'Copied!';
+                    } catch (err) {
+                        console.error('Fallback: Oops, unable to copy', err);
+                        e.target.textContent = 'Error!';
+                    }
+                    document.body.removeChild(textArea);
+                    setTimeout(() => e.target.textContent = 'Copy Link', 2000);
                 }
             });
 
-            searchBox.addEventListener('input', (e) => {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    searchTerm = e.target.value;
+            gameTabsContainer.addEventListener('click', (e) => {
+                const tab = e.target.closest('.game-tab');
+                if (tab) {
+                    gameTabsContainer.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    activeGameId = parseInt(tab.dataset.gameId, 10);
                     currentPage = 1;
                     fetchTournaments();
-                }, 500);
+                    fetchTournaments(true);
+                }
             });
-
-            pastEventsToggle.addEventListener('change', (e) => {
-                showPast = e.target.checked;
+            
+            const handleFilterChange = () => {
+                searchTerm = searchBox.value;
+                activeCity = cityFilter.value;
+                showPast = pastEventsToggle.checked;
                 currentPage = 1;
                 fetchTournaments();
-            });
+            };
 
-            prevButton.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    fetchTournaments();
-                }
-            });
-
-            nextButton.addEventListener('click', () => {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    fetchTournaments();
-                }
-            });
+            searchBox.addEventListener('input', () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(handleFilterChange, 500); });
+            cityFilter.addEventListener('change', handleFilterChange);
+            pastEventsToggle.addEventListener('change', handleFilterChange);
+            prevButton.addEventListener('click', () => { if (currentPage > 1) { currentPage--; fetchTournaments(); } });
+            nextButton.addEventListener('click', () => { if (currentPage < totalPages) { currentPage++; fetchTournaments(); } });
 
             // --- Initial Load ---
             fetchTournaments();
+            fetchTournaments(true);
         });
     </script>
-
 </body>
 </html>
