@@ -227,8 +227,8 @@
             };
             
             const graphqlQuery = `
-                query TournamentsByState($perPage: Int!, $page: Int!, $filter: TournamentPageFilter) {
-                  tournaments(query: { perPage: $perPage, page: $page, filter: $filter }) {
+                query TournamentsByState($perPage: Int!, $page: Int!, $filter: TournamentPageFilter, $sortBy: String) {
+                  tournaments(query: { perPage: $perPage, page: $page, filter: $filter, sortBy: $sortBy }) {
                     pageInfo { totalPages page }
                     nodes {
                       id name slug startAt endAt city venueAddress registrationClosesAt
@@ -268,21 +268,29 @@
                     videogameIds: [state.activeGameId] 
                 };
 
+                let sortBy = 'startAt asc';
+
                 if (!isFeatured) {
                     if (state.searchTerm) filter.name = state.searchTerm;
                 }
                 
                 if (state.showPast && !isFeatured) {
                     filter.beforeDate = timestamp;
+                    sortBy = 'startAt desc';
                 } else {
                     filter.afterDate = timestamp;
+                }
+
+                if (isFeatured) {
+                    sortBy = 'attendeeCount desc';
                 }
 
                 const queryWithGameId = graphqlQuery.replace('$videogameId', state.activeGameId);
                 const variables = {
                     perPage: isFeatured ? 1 : 50,
                     page: isFeatured ? 1 : state.currentPage,
-                    filter: filter
+                    filter: filter,
+                    sortBy: sortBy
                 };
 
                 try {
