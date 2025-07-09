@@ -128,18 +128,6 @@
              filter: drop-shadow(0 0 5px #00ff00);
         }
 
-        /* Toggle Switch Animation */
-        .toggle-checkbox {
-            transition: transform 0.2s ease-in-out;
-        }
-        .toggle-checkbox:checked {
-            transform: translateX(1rem); /* 1rem = w-10 (2.5rem) - w-6 (1.5rem) */
-            border-color: var(--accent-color);
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: var(--accent-color);
-        }
-
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -171,6 +159,21 @@
             display: block;
             opacity: 1;
             transform: translateY(0);
+        }
+        .share-popover {
+            position: absolute;
+            bottom: 50px;
+            right: 0;
+            background-color: #1F2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: none; /* Hidden by default */
         }
     </style>
 </head>
@@ -233,6 +236,15 @@
                       images(type: "banner") { url }
                       events(filter: { videogameId: [$videogameId] }) {
                         id slug name
+                        standings(query: { perPage: 1, page: 1 }) {
+                          nodes {
+                            placement
+                            entrant {
+                              id
+                              name
+                            }
+                          }
+                        }
                       }
                     }
                   }
@@ -363,6 +375,21 @@
                     const formattedDate = startDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                     const registrationOpen = tournament.registrationClosesAt ? new Date(tournament.registrationClosesAt * 1000) > new Date() : true;
                     
+                    let winnerHTML = '';
+                    if (state.showPast) {
+                        const winner = tournament.events?.[0]?.standings?.nodes?.[0];
+                        if (winner) {
+                            const entrantName = winner.entrant.name;
+                            const nameParts = entrantName.split('|').map(part => part.trim());
+                            let styledName = (nameParts.length > 1)
+                                ? `<span class="font-medium text-gray-400">${nameParts[0]}</span> <span class="font-bold text-gray-100">${nameParts[1]}</span>`
+                                : `<span class="font-bold text-gray-100">${entrantName}</span>`;
+                            winnerHTML = `<p class="text-gray-300 mb-4"><span class="font-semibold text-gray-200">Winner:</span> ${styledName}</p>`;
+                        } else {
+                            winnerHTML = `<p class="text-gray-300 mb-4"><span class="font-semibold text-gray-200">Winner:</span> TBD</p>`;
+                        }
+                    }
+                    
                     cardFront.innerHTML = `
                         <div class="image-container">
                             <a href="https://start.gg/${tournament.slug}" target="_blank" rel="noopener noreferrer">
@@ -373,8 +400,18 @@
                             <h2 class="text-xl font-bold mb-2 h-14 overflow-hidden" style="color: var(--text-color-primary);">${tournament.name}</h2>
                             <p class="mb-2" style="color: var(--text-color-secondary);"><span class="font-semibold" style="color: var(--text-color-primary);">Date:</span> ${formattedDate}</p>
                             <p class="mb-4" style="color: var(--text-color-secondary);"><span class="font-semibold" style="color: var(--text-color-primary);">Location:</span> ${tournament.city || 'TBA'}</p>
+                            ${winnerHTML}
                             <div class="mt-auto flex items-center justify-between">
                                 <a href="https://start.gg/${tournament.slug}/register" target="_blank" class="inline-block ok-blue ok-blue-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm ${registrationOpen && !state.showPast ? '' : 'hidden'}">Register</a>
+                                 <div class="relative flex gap-2">
+                                    <button class="calendar-button" title="Add to Calendar">
+                                        <svg class="w-6 h-6 text-gray-400 hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    </button>
+                                    <button class="share-button" title="Share Tournament">
+                                        <svg class="w-6 h-6 text-gray-400 hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
+                                    </button>
+                                    <div class="share-popover"></div>
+                                </div>
                             </div>
                         </div>`;
                     
@@ -424,7 +461,7 @@
                 }
             };
 
-            const updateStatCounter = (displayed, total) => {
+             const updateStatCounter = (displayed, total) => {
                 const statEl = document.getElementById('stat-counter');
                 if (state.activeCity) {
                     statEl.textContent = `Showing ${displayed} tournaments in ${state.activeCity}.`;
