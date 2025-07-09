@@ -363,7 +363,7 @@
                 state.tournaments.forEach((tournament, index) => {
                     const cardContainer = document.createElement('div');
                     cardContainer.className = 'card-container';
-                    cardContainer.dataset.id = `tournament-${tournament.id}`;
+                    cardContainer.dataset.id = tournament.id;
 
                     const flipper = document.createElement('div');
                     flipper.className = 'tournament-card-flipper';
@@ -503,6 +503,36 @@
                 themeToggle.innerHTML = theme === 'light' ? moonIcon : sunIcon;
             };
 
+            function createIcsFile(tournament) {
+                const startDate = new Date(tournament.startAt * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+                const endDate = new Date(tournament.endAt * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+                const url = `https://start.gg/${tournament.slug}`;
+
+                const icsContent = [
+                    'BEGIN:VCALENDAR',
+                    'VERSION:2.0',
+                    'PRODID:-//OklahomaSmash//NONSGML v1.0//EN',
+                    'BEGIN:VEVENT',
+                    `UID:${tournament.id}@oklahomasmash.com`,
+                    `DTSTAMP:${startDate}`,
+                    `DTSTART:${startDate}`,
+                    `DTEND:${endDate}`,
+                    `SUMMARY:${tournament.name}`,
+                    `DESCRIPTION:View tournament details at ${url}`,
+                    `LOCATION:${tournament.venueAddress || tournament.city}`,
+                    'END:VEVENT',
+                    'END:VCALENDAR'
+                ].join('\r\n');
+
+                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `${tournament.name}.ics`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
             function initializePage() {
                 document.getElementById('controls-container').innerHTML = `
                     <div class="relative w-full md:w-auto flex-grow">
@@ -560,6 +590,52 @@
                         state.currentPage = 1;
                         fetchTournaments();
                         fetchTournaments(true);
+                    }
+                });
+
+                document.getElementById('tournaments-list').addEventListener('click', (e) => {
+                    const calendarButton = e.target.closest('.calendar-button');
+                    const shareButton = e.target.closest('.share-button');
+                    
+                    if (calendarButton) {
+                        const card = e.target.closest('.card-container');
+                        const tournamentId = parseInt(card.dataset.id.replace('tournament-',''), 10);
+                        const tournament = state.tournaments.find(t => t.id === tournamentId);
+                        if (tournament) createIcsFile(tournament);
+                    }
+
+                    if (shareButton) {
+                        const popover = shareButton.parentElement.querySelector('.share-popover');
+                        const tournamentLink = `https://start.gg/${state.tournaments.find(t => t.id === parseInt(e.target.closest('.card-container').dataset.id.replace('tournament-',''))).slug}`;
+                        popover.style.display = popover.style.display === 'flex' ? 'none' : 'flex';
+                        popover.innerHTML = `
+                            <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(tournamentLink)}&text=Check out this tournament!" target="_blank" class="text-sm text-gray-300 hover:text-indigo-400">Twitter</a>
+                            <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(tournamentLink)}" target="_blank" class="text-sm text-gray-300 hover:text-indigo-400">Facebook</a>
+                            <button class="copy-link-button text-sm text-gray-300 hover:text-indigo-400" data-link="${tournamentLink}">Copy Link</button>
+                        `;
+                    }
+                });
+
+                document.body.addEventListener('click', e => {
+                    if(e.target.closest('.share-button')) return;
+                    if(!e.target.closest('.share-popover')) {
+                        document.querySelectorAll('.share-popover').forEach(p => p.style.display = 'none');
+                    }
+                    if(e.target.classList.contains('copy-link-button')) {
+                        const linkToCopy = e.target.dataset.link;
+                        const textArea = document.createElement("textarea");
+                        textArea.value = linkToCopy;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        try {
+                            document.execCommand('copy');
+                            e.target.textContent = 'Copied!';
+                        } catch (err) {
+                            console.error('Fallback: Oops, unable to copy', err);
+                            e.target.textContent = 'Error!';
+                        }
+                        document.body.removeChild(textArea);
+                        setTimeout(() => e.target.textContent = 'Copy Link', 2000);
                     }
                 });
 
