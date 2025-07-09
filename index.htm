@@ -218,10 +218,12 @@
                 totalPages: 1,
                 activeGameId: 1386,
                 tournaments: [],
+                allFetchedTournaments: [],
                 theme: localStorage.getItem('theme') || 'dark',
                 searchTerm: '',
                 activeCity: '',
                 showPast: false,
+                showWeeklies: false,
                 debounceTimer: null,
                 countdownInterval: null
             };
@@ -232,6 +234,7 @@
                     pageInfo { totalPages page }
                     nodes {
                       id name slug startAt endAt city venueAddress registrationClosesAt
+                      owner { id player { gamerTag } }
                       participants(query: {perPage: 1}) { pageInfo { total } }
                       images(type: "banner") { url }
                       events(filter: { videogameId: [$videogameId] }) {
@@ -272,6 +275,7 @@
 
                 if (!isFeatured) {
                     if (state.searchTerm) filter.name = state.searchTerm;
+                    if (state.showWeeklies) filter.name = (filter.name ? filter.name + " " : "") + "Weekly";
                 }
                 
                 if (state.showPast && !isFeatured) {
@@ -287,7 +291,7 @@
 
                 const queryWithGameId = graphqlQuery.replace('$videogameId', state.activeGameId);
                 const variables = {
-                    perPage: isFeatured ? 1 : 50,
+                    perPage: isFeatured ? 1 : 100,
                     page: isFeatured ? 1 : state.currentPage,
                     filter: filter,
                     sortBy: sortBy
@@ -313,23 +317,8 @@
                          return;
                     } 
                     
-                    const totalBeforeCityFilter = tournaments.length;
-                    if (state.activeCity) {
-                        tournaments = tournaments.filter(t => t.city === state.activeCity);
-                    }
-
-                    loadingEl.style.display = 'none';
-                    state.tournaments = tournaments;
-                    const pageInfo = data.data.tournaments.pageInfo;
-                    state.totalPages = pageInfo.totalPages || 1;
-
-                    if (tournaments.length === 0) {
-                        listEl.innerHTML = `<p class="text-center col-span-full text-gray-400">No tournaments found for this game with the current filters.</p>`;
-                    } else {
-                        renderTournaments();
-                    }
-                    updateStatCounter(tournaments.length, totalBeforeCityFilter);
-                    if(!state.activeCity) updatePagination(pageInfo);
+                    state.allFetchedTournaments = tournaments;
+                    applyClientFilters();
 
                 } catch (err) {
                     console.error('Fetch error:', err);
@@ -340,6 +329,29 @@
                 }
             };
             
+            const applyClientFilters = () => {
+                const loadingEl = document.getElementById('loading');
+                const listEl = document.getElementById('tournaments-list');
+                const paginationEl = document.getElementById('pagination-controls');
+                
+                let tournaments = state.allFetchedTournaments;
+                
+                if (state.activeCity) {
+                    tournaments = tournaments.filter(t => t.city === state.activeCity);
+                }
+
+                loadingEl.style.display = 'none';
+                state.tournaments = tournaments;
+                
+                if (tournaments.length === 0) {
+                    listEl.innerHTML = `<p class="text-center col-span-full text-gray-400">No tournaments found with the current filters.</p>`;
+                } else {
+                    renderTournaments();
+                }
+                updateStatCounter(tournaments.length, state.allFetchedTournaments.length);
+                paginationEl.innerHTML = ''; // Pagination disabled with client-side filtering for simplicity
+            };
+
             const renderFeaturedTournament = (tournament) => {
                 const featuredContainer = document.getElementById('featured-tournament');
                 const imageUrl = tournament.images.length > 0 ? tournament.images[0].url : `https://placehold.co/1200x400/111827/4F46E5?text=Featured+Event`;
@@ -408,6 +420,7 @@
                             <h2 class="text-xl font-bold mb-2 h-14 overflow-hidden" style="color: var(--text-color-primary);">${tournament.name}</h2>
                             <p class="mb-2" style="color: var(--text-color-secondary);"><span class="font-semibold" style="color: var(--text-color-primary);">Date:</span> ${formattedDate}</p>
                             <p class="mb-4" style="color: var(--text-color-secondary);"><span class="font-semibold" style="color: var(--text-color-primary);">Location:</span> ${tournament.city || 'TBA'}</p>
+                            <p class="mb-4 text-sm" style="color: var(--text-color-secondary);">Organized by: <span class="font-semibold" style="color: var(--text-color-primary);">${tournament.owner.player.gamerTag || 'N/A'}</span></p>
                             ${winnerHTML}
                             <div class="mt-auto flex items-center justify-between">
                                 <a href="https://start.gg/${tournament.slug}/register" target="_blank" class="inline-block ok-blue ok-blue-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm ${registrationOpen && !state.showPast ? '' : 'hidden'}">Register</a>
