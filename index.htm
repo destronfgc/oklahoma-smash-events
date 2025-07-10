@@ -160,6 +160,21 @@
             opacity: 1;
             transform: translateY(0);
         }
+        .share-popover {
+            position: absolute;
+            bottom: 50px;
+            right: 0;
+            background-color: #1F2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: none; /* Hidden by default */
+        }
     </style>
 </head>
 <body class="text-gray-200">
@@ -223,7 +238,7 @@
                       owner { id player { gamerTag } }
                       participants(query: {perPage: 1}) { pageInfo { total } }
                       images(type: "banner") { url }
-                      events {
+                      events(filter: { videogameId: [$videogameId] }) {
                         id slug name
                         standings(query: { perPage: 1, page: 1 }) {
                           nodes {
@@ -250,14 +265,16 @@
                 }
             `;
             
-            const fetchTournaments = async () => {
+            const fetchTournaments = async (isFeatured = false) => {
                 const loadingEl = document.getElementById('loading');
                 const listEl = document.getElementById('tournaments-list');
                 const paginationEl = document.getElementById('pagination-controls');
                 
-                loadingEl.style.display = 'block';
-                listEl.innerHTML = '';
-                paginationEl.innerHTML = '';
+                if (!isFeatured) {
+                    loadingEl.style.display = 'block';
+                    listEl.innerHTML = '';
+                    paginationEl.innerHTML = '';
+                }
 
                 const timestamp = Math.floor(Date.now() / 1000);
                 let filter = {
@@ -267,20 +284,26 @@
 
                 let sortBy = 'startAt asc';
 
-                if (state.searchTerm) filter.name = state.searchTerm;
-                if (state.showWeeklies) filter.name = (filter.name ? filter.name + " " : "") + "Weekly";
+                if (!isFeatured) {
+                    if (state.searchTerm) filter.name = state.searchTerm;
+                    if (state.showWeeklies) filter.name = (filter.name ? filter.name + " " : "") + "Weekly";
+                }
                 
-                if (state.showPast) {
+                if (state.showPast && !isFeatured) {
                     filter.beforeDate = timestamp;
                     sortBy = 'startAt desc';
                 } else {
                     filter.afterDate = timestamp;
                 }
 
+                if (isFeatured) {
+                    sortBy = 'attendeeCount desc';
+                }
+
                 const queryWithGameId = graphqlQuery.replace('$videogameId', state.activeGameId);
                 const variables = {
-                    perPage: 100,
-                    page: state.currentPage,
+                    perPage: isFeatured ? 1 : 100,
+                    page: isFeatured ? 1 : state.currentPage,
                     filter: filter,
                     sortBy: sortBy
                 };
@@ -296,18 +319,30 @@
                     });
 
                     const data = await response.json();
-                    if (data.errors) throw new Error(data.errors[0].message);
+                    if (!data || (!data.data && data.errors)) {
+                         throw new Error(data.errors ? data.errors[0].message : 'Invalid API Response');
+                    }
                     
-                    state.allFetchedTournaments = data.data.tournaments.nodes;
+                    if (isFeatured) {
+                         if(data.data.tournaments && data.data.tournaments.nodes.length > 0) {
+                            renderFeaturedTournament(data.data.tournaments.nodes[0]);
+                         }
+                         return;
+                    } 
+                    
+                    let tournaments = data.data.tournaments.nodes;
+                    state.allFetchedTournaments = tournaments;
                     applyClientFilters();
 
                 } catch (err) {
                     console.error('Fetch error:', err);
-                    loadingEl.style.display = 'none';
-                    listEl.innerHTML = `<p class="text-center col-span-full text-red-400">Error: ${err.message}</p>`;
+                    if (!isFeatured) {
+                        loadingEl.style.display = 'none';
+                        listEl.innerHTML = `<p class="text-center col-span-full text-red-400">Error: ${err.message}</p>`;
+                    }
                 }
             };
-
+            
             const fetchFeaturedTournament = async () => {
                 try {
                     const response = await fetch('https://api.start.gg/gql/alpha', {
@@ -322,12 +357,15 @@
                         }),
                     });
                     const data = await response.json();
-                    if (data.errors) throw new Error(data.errors[0].message);
+                    if (!data || (!data.data && data.errors)) {
+                         throw new Error(data.errors ? data.errors[0].message : 'Invalid API Response for featured tournament');
+                    }
                     if (data.data.tournament) {
                         renderFeaturedTournament(data.data.tournament);
                     }
                 } catch (err) {
                     console.error("Featured fetch error:", err);
+                    document.getElementById('featured-tournament').innerHTML = `<p class="text-center text-red-400">Could not load featured tournament.</p>`;
                 }
             };
             
