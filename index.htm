@@ -160,21 +160,6 @@
             opacity: 1;
             transform: translateY(0);
         }
-        .share-popover {
-            position: absolute;
-            bottom: 50px;
-            right: 0;
-            background-color: #1F2937;
-            border: 1px solid #374151;
-            border-radius: 8px;
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            z-index: 10;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            display: none; /* Hidden by default */
-        }
     </style>
 </head>
 <body class="text-gray-200">
@@ -238,7 +223,7 @@
                       owner { id player { gamerTag } }
                       participants(query: {perPage: 1}) { pageInfo { total } }
                       images(type: "banner") { url }
-                      events(filter: { videogameId: [$videogameId] }) {
+                      events {
                         id slug name
                         standings(query: { perPage: 1, page: 1 }) {
                           nodes {
@@ -260,6 +245,7 @@
                   tournament(slug: $slug){
                     id name slug startAt endAt city venueAddress
                     images(type: "banner") { url }
+                    events { id name }
                   }
                 }
             `;
@@ -370,20 +356,31 @@
                 const imageUrl = tournament.images.length > 0 ? tournament.images[0].url : `https://placehold.co/1200x400/111827/4F46E5?text=Featured+Event`;
                 const startDate = new Date(tournament.startAt * 1000);
                 const formattedDate = startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                const eventsList = tournament.events.map(event => `<li class="text-gray-400">${event.name}</li>`).join('');
 
                 featuredContainer.innerHTML = `
-                    <div class="bg-gray-900 rounded-lg shadow-lg overflow-hidden border-2 border-indigo-500/50">
-                        <div class="md:flex">
-                            <div class="md:flex-shrink-0">
-                                <img class="h-48 w-full object-cover md:w-48" src="${imageUrl}" alt="${tournament.name}">
-                            </div>
-                            <div class="p-8">
+                    <div class="bg-gray-900 rounded-lg shadow-lg overflow-hidden border-2 border-indigo-500/50 grid md:grid-cols-2">
+                        <div class="p-8 flex flex-col justify-between">
+                            <div>
                                 <div class="uppercase tracking-wide text-sm text-indigo-400 font-semibold">Featured Tournament</div>
-                                <a href="https://start.gg/${tournament.slug}" target="_blank" class="block mt-1 text-2xl leading-tight font-bold text-white hover:underline">${tournament.name}</a>
-                                <p class="mt-2 text-gray-400">${tournament.city} • ${formattedDate}</p>
-                                <div id="countdown-timer" class="mt-2 text-lg text-green-400"></div>
-                                <a href="https://start.gg/${tournament.slug}/register" target="_blank" class="mt-4 inline-block ok-blue ok-blue-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors">Register Now</a>
+                                <a href="https://start.gg/${tournament.slug}" target="_blank" class="block mt-1 text-4xl leading-tight font-bold text-white hover:underline">${tournament.name}</a>
+                                <p class="mt-2 text-lg text-gray-400">${tournament.city} • ${formattedDate}</p>
+                                <p class="mt-1 text-sm text-gray-500">${tournament.venueAddress || ''}</p>
                             </div>
+                            <div class="mt-6">
+                                <h4 class="font-semibold text-gray-300">Main Events:</h4>
+                                <ul class="list-disc list-inside text-gray-400">${eventsList}</ul>
+                            </div>
+                            <div class="mt-6">
+                                <div id="countdown-timer" class="text-2xl text-green-400 font-bold"></div>
+                                <div class="flex gap-4 mt-4">
+                                    <a href="https://start.gg/${tournament.slug}/register" target="_blank" class="flex-1 text-center ok-blue ok-blue-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors">Register Now</a>
+                                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tournament.venueAddress)}" target="_blank" class="flex-1 text-center bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors">Get Directions</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="md:flex-shrink-0">
+                            <img class="h-full w-full object-cover" src="${imageUrl}" alt="${tournament.name}">
                         </div>
                     </div>
                 `;
