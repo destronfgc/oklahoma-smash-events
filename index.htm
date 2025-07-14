@@ -19,7 +19,8 @@
             --border-color: #374151;
             --accent-color: #4F46E5;
             --accent-color-hover: #4338CA;
-            --active-tab-color: #818CF8;
+            --active-tab-color: #A5B4FC;
+            --card-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
         }
 
         .light-theme {
@@ -33,6 +34,7 @@
             --accent-color: #D97706;
             --accent-color-hover: #B45309;
             --active-tab-color: #F59E0B;
+            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
         }
 
         body {
@@ -45,7 +47,7 @@
             font-family: 'Anton', sans-serif;
         }
         
-        /* Flipping Card Styles */
+        /* Card Styles */
         .card-container {
             perspective: 1000px;
             min-height: 450px;
@@ -76,7 +78,7 @@
             transition: box-shadow 0.3s ease-in-out;
         }
         .card-container:hover .card-face {
-             box-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
+             box-shadow: var(--card-shadow);
         }
         .card-back {
             transform: rotateY(180deg);
@@ -104,19 +106,21 @@
         .game-tab {
             cursor: pointer;
             padding: 12px;
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s ease-in-out;
+            transition: all 0.3s ease-in-out;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 8px;
+            opacity: 0.6;
         }
         .game-tab.active {
             color: var(--active-tab-color);
-            border-bottom-color: var(--active-tab-color);
+            transform: scale(1.15);
+            opacity: 1;
         }
         .game-tab:not(.active):hover {
-            background-color: var(--border-color);
+            opacity: 0.8;
+            transform: translateY(-2px);
         }
         .ultimate-icon-glow {
             filter: drop-shadow(0 0 5px #ef4444);
@@ -160,21 +164,6 @@
             opacity: 1;
             transform: translateY(0);
         }
-        .share-popover {
-            position: absolute;
-            bottom: 50px;
-            right: 0;
-            background-color: #1F2937;
-            border: 1px solid #374151;
-            border-radius: 8px;
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            z-index: 10;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            display: none; /* Hidden by default */
-        }
     </style>
 </head>
 <body class="text-gray-200">
@@ -188,7 +177,7 @@
 
         <div id="featured-tournament" class="mb-12"></div>
 
-        <div id="game-tabs" class="flex flex-wrap justify-center items-center gap-4 mb-8 text-gray-400 border-b border-gray-700">
+        <div id="game-tabs" class="flex flex-wrap justify-center items-center gap-4 mb-12 text-gray-400">
             <div class="game-tab active" data-game-id="1386" title="Ultimate"><img src="images/ultimate-logo.png" class="h-10 ultimate-icon-glow" alt="Ultimate Icon"></div>
             <div class="game-tab" data-game-id="1" title="Melee"><img src="images/melee-logo.png" class="h-10 melee-icon-glow" alt="Melee Icon"></div>
             <div class="game-tab" data-game-id="33602" title="P+"><img src="images/p-plus-logo.png" class="h-10 p-plus-icon" alt="P+ Icon"></div>
@@ -204,7 +193,7 @@
         <div id="pagination-controls" class="flex justify-center items-center mt-12 gap-4"></div>
     </div>
 
-    <footer class="text-center py-6 mt-12 bg-gray-900 rounded-lg shadow-md border-t border-gray-700"></footer>
+    <footer class="text-center py-6 mt-12 bg-gray-900 rounded-t-lg shadow-md border-t border-gray-700"></footer>
     
     <button id="back-to-top-btn" class="p-3 rounded-full ok-blue ok-blue-hover text-white shadow-lg">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
@@ -265,16 +254,14 @@
                 }
             `;
             
-            const fetchTournaments = async (isFeatured = false) => {
+            const fetchTournaments = async () => {
                 const loadingEl = document.getElementById('loading');
                 const listEl = document.getElementById('tournaments-list');
                 const paginationEl = document.getElementById('pagination-controls');
                 
-                if (!isFeatured) {
-                    loadingEl.style.display = 'block';
-                    listEl.innerHTML = '';
-                    paginationEl.innerHTML = '';
-                }
+                loadingEl.style.display = 'block';
+                listEl.innerHTML = '';
+                paginationEl.innerHTML = '';
 
                 const timestamp = Math.floor(Date.now() / 1000);
                 let filter = {
@@ -284,26 +271,20 @@
 
                 let sortBy = 'startAt asc';
 
-                if (!isFeatured) {
-                    if (state.searchTerm) filter.name = state.searchTerm;
-                    if (state.showWeeklies) filter.name = (filter.name ? filter.name + " " : "") + "Weekly";
-                }
+                if (state.searchTerm) filter.name = state.searchTerm;
+                if (state.showWeeklies) filter.name = (filter.name ? filter.name + " " : "") + "Weekly";
                 
-                if (state.showPast && !isFeatured) {
+                if (state.showPast) {
                     filter.beforeDate = timestamp;
                     sortBy = 'startAt desc';
                 } else {
                     filter.afterDate = timestamp;
                 }
 
-                if (isFeatured) {
-                    sortBy = 'attendeeCount desc';
-                }
-
                 const queryWithGameId = graphqlQuery.replace('$videogameId', state.activeGameId);
                 const variables = {
-                    perPage: isFeatured ? 1 : 100,
-                    page: isFeatured ? 1 : state.currentPage,
+                    perPage: 100,
+                    page: state.currentPage,
                     filter: filter,
                     sortBy: sortBy
                 };
@@ -323,23 +304,13 @@
                          throw new Error(data.errors ? data.errors[0].message : 'Invalid API Response');
                     }
                     
-                    if (isFeatured) {
-                         if(data.data.tournaments && data.data.tournaments.nodes.length > 0) {
-                            renderFeaturedTournament(data.data.tournaments.nodes[0]);
-                         }
-                         return;
-                    } 
-                    
-                    let tournaments = data.data.tournaments.nodes;
-                    state.allFetchedTournaments = tournaments;
+                    state.allFetchedTournaments = data.data.tournaments.nodes;
                     applyClientFilters();
 
                 } catch (err) {
                     console.error('Fetch error:', err);
-                    if (!isFeatured) {
-                        loadingEl.style.display = 'none';
-                        listEl.innerHTML = `<p class="text-center col-span-full text-red-400">Error: ${err.message}</p>`;
-                    }
+                    loadingEl.style.display = 'none';
+                    listEl.innerHTML = `<p class="text-center col-span-full text-red-400">Error: ${err.message}</p>`;
                 }
             };
             
@@ -397,7 +368,7 @@
                 const eventsList = tournament.events.map(event => `<li class="text-gray-400">${event.name}</li>`).join('');
 
                 featuredContainer.innerHTML = `
-                    <div class="bg-gray-900 rounded-lg shadow-lg overflow-hidden border-2 border-indigo-500/50 grid md:grid-cols-2">
+                    <div class="bg-gray-900 rounded-lg shadow-lg overflow-hidden border-2 border-indigo-500/50 grid grid-cols-1 lg:grid-cols-2">
                         <div class="p-8 flex flex-col justify-between">
                             <div>
                                 <div class="uppercase tracking-wide text-sm text-indigo-400 font-semibold">Featured Tournament</div>
