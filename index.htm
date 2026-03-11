@@ -184,7 +184,8 @@
         <!-- Header -->
         <header class="text-center mb-10 py-12 glass-panel rounded-2xl relative overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 z-0"></div>
-            <div class="relative z-10">
+            <div class="relative z-10 flex flex-col items-center">
+                <img src="images/wereOK-logo.png" alt="We're OK Logo" class="h-32 md:h-48 mb-4 drop-shadow-[0_0_25px_rgba(99,102,241,0.4)] hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'">
                 <h1 class="font-anton text-5xl md:text-7xl font-bold text-gradient tracking-wide mb-4">OKLAHOMA SMASH</h1>
                 <p class="text-lg md:text-xl text-[var(--text-muted)] font-medium">The official hub for OK Smash tournaments.</p>
             </div>
@@ -276,74 +277,76 @@
     <div id="toast-container"></div>
 
     <script>
-        // ==========================================
-        // 1. STATE & CONSTANTS
-        // ==========================================
-        const API_KEY = 'd962f418dd0489a80b44305d874f673d';
-        const API_URL = 'https://api.start.gg/gql/alpha';
-        const FEATURED_SLUG = 'tournament/the-oklahoma-invitational'; // Update this manually
-        
-        const state = {
-            activeGameId: 1386,
-            tournaments: [],
-            allFetchedTournaments: [],
-            theme: localStorage.getItem('theme') || 'dark',
-            searchTerm: '',
-            activeCity: '',
-            showPast: false,
-            debounceTimer: null,
-            countdownInterval: null
-        };
+        document.addEventListener('DOMContentLoaded', () => {
+            // ==========================================
+            // 1. STATE & CONSTANTS
+            // ==========================================
+            const API_KEY = 'd962f418dd0489a80b44305d874f673d';
+            const API_URL = 'https://api.start.gg/gql/alpha';
+            
+            const state = {
+                activeGameId: 1386,
+                tournaments: [],
+                allFetchedTournaments: [],
+                theme: localStorage.getItem('theme') || 'dark',
+                searchTerm: '',
+                activeCity: '',
+                showPast: false,
+                debounceTimer: null,
+                countdownInterval: null
+            };
 
-        const GRAPHQL_QUERY = `
-            query TournamentsByState($perPage: Int!, $page: Int!, $filter: TournamentPageFilter, $sortBy: String) {
-                tournaments(query: { perPage: $perPage, page: $page, filter: $filter, sortBy: $sortBy }) {
-                    nodes {
-                        id name slug startAt endAt city venueAddress registrationClosesAt
-                        owner { id player { gamerTag } }
-                        participants(query: {perPage: 1}) { pageInfo { total } }
-                        images(type: "banner") { url }
-                        events(filter: { videogameId: [$videogameId] }) {
-                            id slug name
-                            standings(query: { perPage: 1, page: 1 }) {
-                                nodes { placement entrant { id name } }
+            const GRAPHQL_QUERY = `
+                query TournamentsByState($perPage: Int!, $page: Int!, $filter: TournamentPageFilter, $sortBy: String) {
+                    tournaments(query: { perPage: $perPage, page: $page, filter: $filter, sortBy: $sortBy }) {
+                        nodes {
+                            id name slug startAt endAt city venueAddress registrationClosesAt
+                            owner { id player { gamerTag } }
+                            participants(query: {perPage: 1}) { pageInfo { total } }
+                            images(type: "banner") { url }
+                            events(filter: { videogameId: [$videogameId] }) {
+                                id slug name
+                                standings(query: { perPage: 1, page: 1 }) {
+                                    nodes { placement entrant { id name } }
+                                }
                             }
                         }
                     }
                 }
-            }
-        `;
+            `;
 
-        const FEATURED_QUERY = `
-            query TournamentQuery($slug: String) {
-                tournament(slug: $slug){
-                    id name slug startAt endAt city venueAddress
-                    images(type: "banner") { url }
-                    events { id name }
+            // This dynamically grabs the next 15 upcoming tournaments so we can pick the biggest one locally
+            const FEATURED_QUERY = `
+                query FeaturedTournament($filter: TournamentPageFilter) {
+                    tournaments(query: { perPage: 15, page: 1, filter: $filter, sortBy: "startAt asc" }) {
+                        nodes {
+                            id name slug startAt endAt city venueAddress registrationClosesAt
+                            participants(query: {perPage: 1}) { pageInfo { total } }
+                            images(type: "banner") { url }
+                            events(filter: { videogameId: [$videogameId] }) { id name }
+                        }
+                    }
                 }
-            }
-        `;
+            `;
 
-        // ==========================================
-        // 2. DOM ELEMENTS
-        // ==========================================
-        const els = {
-            list: document.getElementById('tournaments-list'),
-            featured: document.getElementById('featured-tournament'),
-            statCounter: document.getElementById('stat-counter'),
-            emptyState: document.getElementById('empty-state'),
-            searchInput: document.getElementById('search-box'),
-            citySelect: document.getElementById('city-filter'),
-            btnUpcoming: document.getElementById('btn-upcoming'),
-            btnPast: document.getElementById('btn-past'),
-            btnClearFilters: document.getElementById('clear-filters-btn'),
-            themeToggle: document.getElementById('theme-toggle'),
-            gameTabs: document.getElementById('game-tabs'),
-            backToTop: document.getElementById('back-to-top-btn'),
-            toastContainer: document.getElementById('toast-container')
-        };
-        
-        document.addEventListener('DOMContentLoaded', () => {
+            // ==========================================
+            // 2. DOM ELEMENTS
+            // ==========================================
+            const els = {
+                list: document.getElementById('tournaments-list'),
+                featured: document.getElementById('featured-tournament'),
+                statCounter: document.getElementById('stat-counter'),
+                emptyState: document.getElementById('empty-state'),
+                searchInput: document.getElementById('search-box'),
+                citySelect: document.getElementById('city-filter'),
+                btnUpcoming: document.getElementById('btn-upcoming'),
+                btnPast: document.getElementById('btn-past'),
+                btnClearFilters: document.getElementById('clear-filters-btn'),
+                themeToggle: document.getElementById('theme-toggle'),
+                gameTabs: document.getElementById('game-tabs'),
+                backToTop: document.getElementById('back-to-top-btn'),
+                toastContainer: document.getElementById('toast-container')
+            };
 
             // ==========================================
             // 3. UTILITY FUNCTIONS
@@ -437,7 +440,9 @@
                 
                 const imgUrl = t.images.length > 0 ? t.images[0].url : `https://placehold.co/1200x400/111827/6366f1?text=Featured+Event`;
                 const dateStr = new Date(t.startAt * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                
+                const eventsList = t.events && t.events.length > 0 ? t.events.map(event => `<li class="text-gray-400">${event.name}</li>`).join('') : '';
+                const regOpen = t.registrationClosesAt ? new Date(t.registrationClosesAt * 1000) > new Date() : true;
+
                 els.featured.innerHTML = `
                     <div class="glass-panel rounded-2xl overflow-hidden border border-[var(--accent)] shadow-[0_0_30px_rgba(99,102,241,0.2)]">
                         <div class="grid grid-cols-1 lg:grid-cols-2">
@@ -453,8 +458,16 @@
                                     ${t.city} ${t.venueAddress ? `• ${t.venueAddress}` : ''}
                                 </p>
                                 
+                                <div class="mt-2 mb-8 hidden md:block">
+                                    <h4 class="font-semibold text-[var(--text-main)] mb-1 text-sm uppercase tracking-wider">Events</h4>
+                                    <ul class="list-disc list-inside text-[var(--text-muted)] text-sm">${eventsList}</ul>
+                                </div>
+
                                 <div class="flex flex-col sm:flex-row gap-4 items-center mt-auto">
-                                    <a href="https://start.gg/${t.slug}/register" target="_blank" class="w-full sm:w-auto text-center btn-primary px-8 py-3 rounded-lg font-bold text-lg">Register Now</a>
+                                    ${regOpen 
+                                        ? `<a href="https://start.gg/${t.slug}/register" target="_blank" class="w-full sm:w-auto text-center btn-primary px-8 py-3 rounded-lg font-bold text-lg">Register Now</a>`
+                                        : `<a href="https://start.gg/${t.slug}" target="_blank" class="w-full sm:w-auto text-center bg-black/30 hover:bg-black/50 text-[var(--text-main)] border border-[var(--card-border)] px-8 py-3 rounded-lg font-bold text-lg transition-colors">View Details</a>`
+                                    }
                                     <div id="countdown-timer" class="text-xl font-bold text-gradient"></div>
                                 </div>
                             </div>
@@ -625,15 +638,38 @@
             };
 
             const fetchFeatured = async () => {
+                const timestamp = Math.floor(Date.now() / 1000);
                 try {
+                    const queryStr = FEATURED_QUERY.replace('$videogameId', state.activeGameId);
                     const res = await fetch(API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
-                        body: JSON.stringify({ query: FEATURED_QUERY, variables: { slug: FEATURED_SLUG } }),
+                        body: JSON.stringify({ 
+                            query: queryStr, 
+                            variables: { 
+                                filter: { 
+                                    addrState: "OK", 
+                                    afterDate: timestamp,
+                                    videogameIds: [state.activeGameId]
+                                } 
+                            } 
+                        }),
                     });
                     const data = await res.json();
-                    if (data?.data?.tournament) renderFeaturedTournament(data.data.tournament);
-                    else els.featured.innerHTML = '';
+                    if (!data || data.errors) throw new Error(data.errors?.[0]?.message || 'API Error for featured');
+                    
+                    const upcomingNodes = data.data?.tournaments?.nodes;
+                    if (upcomingNodes && upcomingNodes.length > 0) {
+                        // Find the tournament with the most entrants from the upcoming batch
+                        const biggestTournament = upcomingNodes.reduce((prev, current) => {
+                            const prevCount = prev.participants?.pageInfo?.total || 0;
+                            const currCount = current.participants?.pageInfo?.total || 0;
+                            return (currCount > prevCount) ? current : prev;
+                        });
+                        renderFeaturedTournament(biggestTournament);
+                    } else {
+                        els.featured.innerHTML = '';
+                    }
                 } catch (err) {
                     console.error("Featured fetch error:", err);
                     els.featured.innerHTML = '';
@@ -691,6 +727,7 @@
                         tab.classList.add('active');
                         state.activeGameId = parseInt(tab.dataset.gameId, 10);
                         fetchTournaments();
+                        fetchFeatured();
                     }
                 });
 
