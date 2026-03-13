@@ -52,6 +52,30 @@
             border: 1px solid var(--card-border);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
+        
+        /* Animated Ambient Blobs */
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(40px, -60px) scale(1.1); }
+            66% { transform: translate(-30px, 30px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob { animation: blob 12s infinite alternate; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+
+        /* Tech Grid Background */
+        .bg-grid-pattern {
+            background-size: 50px 50px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+        }
+        .light-theme .bg-grid-pattern {
+            background-image: linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+        }
 
         /* 3D Flipper Card */
         .card-container {
@@ -86,7 +110,7 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 2rem;
+            padding: 1.5rem;
             background: linear-gradient(to bottom right, var(--card-bg), rgba(0,0,0,0.2));
         }
 
@@ -172,6 +196,11 @@
         }
 
         /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+        
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-start); }
         ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
@@ -182,20 +211,45 @@
 
     <div class="container mx-auto px-4 py-8 max-w-7xl">
         <!-- Header -->
-        <header class="text-center mb-10 py-12 glass-panel rounded-2xl relative overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 z-0"></div>
+        <header class="text-center mb-10 py-16 glass-panel rounded-2xl relative overflow-hidden min-h-[350px] flex flex-col justify-center">
+            <!-- Animated Ambient Background -->
+            <div class="absolute inset-0 bg-grid-pattern z-0"></div>
+            <div class="absolute top-[-20%] left-[-10%] w-96 h-96 bg-indigo-500/40 rounded-full mix-blend-screen filter blur-[100px] animate-blob z-0 pointer-events-none"></div>
+            <div class="absolute top-[-10%] right-[-5%] w-80 h-80 bg-purple-500/40 rounded-full mix-blend-screen filter blur-[100px] animate-blob animation-delay-2000 z-0 pointer-events-none"></div>
+            <div class="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-[var(--accent)]/30 rounded-full mix-blend-screen filter blur-[120px] animate-blob animation-delay-4000 z-0 pointer-events-none"></div>
+            
             <div class="relative z-10 flex flex-col items-center">
-                <img src="images/wereOK-logo.png" alt="We're OK Logo" class="h-32 md:h-48 mb-4 drop-shadow-[0_0_25px_rgba(99,102,241,0.4)] hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'">
-                <h1 class="font-anton text-5xl md:text-7xl font-bold text-gradient tracking-wide mb-4">OKLAHOMA SMASH</h1>
-                <p class="text-lg md:text-xl text-[var(--text-muted)] font-medium">The official hub for OK Smash tournaments.</p>
+                <img src="images/wereOK-logo.png" alt="We're OK Logo" class="h-32 md:h-48 mb-4 drop-shadow-[0_0_25px_rgba(99,102,241,0.5)] hover:scale-105 hover:rotate-3 transition-transform duration-500" onerror="this.style.display='none'">
+                <h1 class="font-anton text-5xl md:text-7xl font-bold text-gradient tracking-wide mb-4 drop-shadow-md">OKLAHOMA SMASH</h1>
+                <p class="text-lg md:text-xl text-[var(--text-muted)] font-medium max-w-2xl mx-auto px-4">The official hub for OK Smash tournaments.</p>
             </div>
-            <button id="theme-toggle" class="absolute top-6 right-6 p-3 rounded-full glass-panel hover:bg-white/10 transition-colors z-20 text-[var(--text-main)]" aria-label="Toggle Theme">
+            
+            <button id="theme-toggle" class="absolute top-6 right-6 p-3 rounded-full glass-panel hover:bg-white/10 transition-colors z-20 text-[var(--text-main)] shadow-lg" aria-label="Toggle Theme">
                 <!-- SVGs will be injected here via JavaScript -->
             </button>
         </header>
 
         <!-- Featured Tournament Section -->
         <div id="featured-tournament" class="mb-12"></div>
+
+        <!-- Weekly Spotlight Section -->
+        <div id="weeklies-section" class="mb-12 hidden relative">
+            <!-- Neon background glow -->
+            <div class="absolute inset-0 bg-gradient-to-r from-[var(--accent)] to-purple-600 opacity-20 rounded-3xl blur-xl z-0"></div>
+            
+            <div class="relative glass-panel p-6 md:p-8 rounded-3xl z-10 border border-[var(--accent)]/30 shadow-2xl bg-black/10">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-2">
+                    <h3 class="text-[var(--text-main)] flex items-center gap-3 uppercase tracking-widest font-black text-2xl">
+                        <svg class="w-7 h-7 text-yellow-500 animate-pulse drop-shadow-[0_0_10px_rgba(234,179,8,0.6)]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        Local Spotlight
+                    </h3>
+                    <span class="text-xs font-bold bg-[var(--accent)] text-white px-4 py-1.5 rounded-full shadow-lg border border-white/20 uppercase tracking-wide">Upcoming Weeklies</span>
+                </div>
+                <div id="weeklies-list" class="flex overflow-x-auto gap-5 pb-4 snap-x custom-scrollbar">
+                    <!-- Weeklies injected here -->
+                </div>
+            </div>
+        </div>
 
         <!-- Game Tabs -->
         <div id="game-tabs" class="flex flex-wrap justify-center items-center gap-6 mb-12 text-[var(--text-muted)]">
@@ -208,8 +262,29 @@
             <div class="game-tab cursor-pointer p-3 rounded-xl" data-game-id="33602" title="Project+">
                 <img src="images/p-plus-logo.png" class="h-10 p-plus-icon" alt="P+ Icon">
             </div>
-            <div class="game-tab cursor-pointer p-3 rounded-xl" data-game-id="18070" title="Other Fighting Games">
-                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+            
+            <!-- FGC Dropdown Tab -->
+            <div class="relative group">
+                <div class="game-tab cursor-pointer p-3 rounded-xl flex items-center justify-center gap-2" id="fgc-tab" title="Other Fighting Games">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span class="font-bold text-sm uppercase hidden md:block tracking-wider">More FGC</span>
+                </div>
+                <!-- Dropdown Menu -->
+                <div class="absolute right-0 md:left-0 top-full mt-2 w-64 glass-panel rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 flex flex-col p-3 shadow-2xl border-[var(--accent)] border-t-2 gap-2">
+                    <div class="fgc-option cursor-pointer p-2 hover:bg-black/20 rounded-lg transition-colors flex items-center justify-center h-14" data-game-id="43868" title="Street Fighter 6">
+                        <img src="images/SF6-logo.png" alt="Street Fighter 6" class="max-h-full max-w-full object-contain drop-shadow-md">
+                    </div>
+                    <div class="fgc-option cursor-pointer p-2 hover:bg-black/20 rounded-lg transition-colors flex items-center justify-center h-14" data-game-id="49783" title="Tekken 8">
+                        <img src="images/tekken8-logo.png" alt="Tekken 8" class="max-h-full max-w-full object-contain drop-shadow-md">
+                    </div>
+                    <div class="fgc-option cursor-pointer p-2 hover:bg-black/20 rounded-lg transition-colors flex items-center justify-center h-14" data-game-id="33945" title="Guilty Gear -Strive-">
+                        <img src="images/GGST_Logo.png" alt="Guilty Gear -Strive-" class="max-h-full max-w-full object-contain drop-shadow-md">
+                    </div>
+                    <div class="w-full h-px bg-[var(--card-border)] my-1"></div>
+                    <div class="fgc-option cursor-pointer p-3 hover:bg-[var(--accent)] hover:text-white rounded-lg text-sm font-bold text-[var(--text-main)] transition-colors text-center uppercase tracking-wider" data-game-id="0">
+                        All FGC / Other
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -284,6 +359,19 @@
             const API_KEY = 'd962f418dd0489a80b44305d874f673d';
             const API_URL = 'https://api.start.gg/gql/alpha';
             
+            // Edit this list to control exactly which events appear in the Weekly Spotlight!
+            const WEEKLY_WHITELIST = [
+                "Smash at NSU",
+                "Casual Portal",
+                "Breakpoint Weekly",
+                "The Weekly Contender",
+                "DZ Fight Club",
+                "Shieldpokes",
+                "Platnite",
+                "ECU Tiger Smash Day",
+                "Sooner Dojo"
+            ];
+            
             const state = {
                 activeGameId: 1386,
                 tournaments: [],
@@ -296,7 +384,8 @@
                 countdownInterval: null
             };
 
-            const GRAPHQL_QUERY = `
+            // Dynamic Query Builder to avoid Complexity limits
+            const getGraphQLQuery = (showPast, eventFilter) => `
                 query TournamentsByState($perPage: Int!, $page: Int!, $filter: TournamentPageFilter, $sortBy: String) {
                     tournaments(query: { perPage: $perPage, page: $page, filter: $filter, sortBy: $sortBy }) {
                         nodes {
@@ -304,26 +393,27 @@
                             owner { id player { gamerTag } }
                             participants(query: {perPage: 1}) { pageInfo { total } }
                             images(type: "banner") { url }
-                            events(filter: { videogameId: [$videogameId] }) {
+                            events${eventFilter} {
                                 id slug name
-                                standings(query: { perPage: 1, page: 1 }) {
+                                ${showPast ? `
+                                standings(query: { perPage: 8, page: 1 }) {
                                     nodes { placement entrant { id name } }
                                 }
+                                ` : ''}
                             }
                         }
                     }
                 }
             `;
 
-            // This dynamically grabs the next 15 upcoming tournaments so we can pick the biggest one locally
-            const FEATURED_QUERY = `
+            const getFeaturedQuery = (eventFilter) => `
                 query FeaturedTournament($filter: TournamentPageFilter) {
                     tournaments(query: { perPage: 15, page: 1, filter: $filter, sortBy: "startAt asc" }) {
                         nodes {
                             id name slug startAt endAt city venueAddress registrationClosesAt
                             participants(query: {perPage: 1}) { pageInfo { total } }
                             images(type: "banner") { url }
-                            events(filter: { videogameId: [$videogameId] }) { id name }
+                            events${eventFilter} { id name }
                         }
                     }
                 }
@@ -335,6 +425,8 @@
             const els = {
                 list: document.getElementById('tournaments-list'),
                 featured: document.getElementById('featured-tournament'),
+                weekliesSection: document.getElementById('weeklies-section'),
+                weekliesList: document.getElementById('weeklies-list'),
                 statCounter: document.getElementById('stat-counter'),
                 emptyState: document.getElementById('empty-state'),
                 searchInput: document.getElementById('search-box'),
@@ -440,7 +532,7 @@
                 
                 const imgUrl = t.images.length > 0 ? t.images[0].url : `https://placehold.co/1200x400/111827/6366f1?text=Featured+Event`;
                 const dateStr = new Date(t.startAt * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                const eventsList = t.events && t.events.length > 0 ? t.events.map(event => `<li class="text-gray-400">${event.name}</li>`).join('') : '';
+                const eventsList = t.events && t.events.length > 0 ? t.events.map(event => `<li class="text-[var(--text-muted)]">${event.name}</li>`).join('') : '';
                 const regOpen = t.registrationClosesAt ? new Date(t.registrationClosesAt * 1000) > new Date() : true;
 
                 els.featured.innerHTML = `
@@ -480,6 +572,37 @@
                 startCountdown(t.startAt);
             };
 
+            const renderWeeklies = (weeklies) => {
+                if (weeklies.length === 0 || state.showPast) {
+                    els.weekliesSection.classList.add('hidden');
+                    return;
+                }
+                
+                els.weekliesSection.classList.remove('hidden');
+                els.weekliesList.innerHTML = weeklies.map(t => {
+                    const dateStr = new Date(t.startAt * 1000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                    return `
+                    <a href="https://start.gg/${t.slug}" target="_blank" class="relative snap-start shrink-0 w-72 md:w-80 bg-black/20 backdrop-blur-md p-5 rounded-2xl hover:bg-black/40 border border-[var(--card-border)] hover:border-[var(--accent)] hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all flex flex-col gap-3 group overflow-hidden">
+                        <!-- Decorative neon edge -->
+                        <div class="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[var(--accent)] to-purple-500 opacity-70 group-hover:opacity-100 transition-opacity"></div>
+                        
+                        <h4 class="font-bold text-lg text-[var(--text-main)] truncate group-hover:text-[var(--accent)] transition-colors pl-2" title="${t.name}">${t.name}</h4>
+                        
+                        <div class="flex flex-col gap-2 mt-1 pl-2">
+                            <p class="text-sm text-[var(--text-muted)] flex items-center gap-2">
+                                <span class="p-1.5 rounded-md bg-[var(--card-border)] text-[var(--text-main)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></span>
+                                <span class="font-medium">${dateStr}</span>
+                            </p>
+                            <p class="text-sm text-[var(--text-muted)] flex items-center gap-2">
+                                <span class="p-1.5 rounded-md bg-[var(--card-border)] text-[var(--text-main)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg></span>
+                                <span class="truncate font-medium">${t.city || 'TBA'}</span>
+                            </p>
+                        </div>
+                    </a>
+                    `;
+                }).join('');
+            };
+
             const renderTournaments = () => {
                 els.list.innerHTML = '';
                 
@@ -502,22 +625,69 @@
                     const regOpen = t.registrationClosesAt ? new Date(t.registrationClosesAt * 1000) > new Date() : true;
                     
                     let winnerHtml = '';
+                    let backCardHtml = '';
+                    
                     if (state.showPast) {
-                        const winner = t.events?.[0]?.standings?.nodes?.[0];
+                        const standingsNodes = t.events?.[0]?.standings?.nodes || [];
+                        const winner = standingsNodes[0];
                         if (winner) {
                             const nameParts = winner.entrant.name.split('|').map(p => p.trim());
                             const sName = nameParts.length > 1 ? `<span class="opacity-70">${nameParts[0]}</span> ${nameParts[1]}` : nameParts[0];
                             winnerHtml = `<div class="mt-4 p-3 bg-black/20 rounded-lg border border-yellow-500/30 text-sm">👑 <strong>Winner:</strong> ${sName}</div>`;
                         }
-                    }
 
-                    const eventsList = t.events && t.events.length > 0 
-                        ? `<div class="mb-3 w-full text-left bg-black/20 p-3 rounded-lg border border-[var(--card-border)]"><p class="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1 font-bold">Events</p><ul class="text-sm text-[var(--text-main)] list-disc list-inside line-clamp-2">${t.events.map(e => `<li>${e.name}</li>`).join('')}</ul></div>`
-                        : '';
-                        
-                    const addressHtml = t.venueAddress 
-                        ? `<div class="mb-4 w-full text-left bg-black/20 p-3 rounded-lg border border-[var(--card-border)]"><p class="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1 font-bold">Address</p><p class="text-sm text-[var(--text-main)] line-clamp-2" title="${t.venueAddress}">${t.venueAddress}</p></div>`
-                        : '';
+                        // Top 8 details for the back of the card
+                        const top8List = standingsNodes.map(s => {
+                            const entrantName = s.entrant?.name || 'Unknown';
+                            const cleanName = entrantName.split('|').pop().trim(); // Removes sponsor for a cleaner list
+                            return `
+                                <div class="flex justify-between items-center bg-black/20 p-2 rounded-lg border border-[var(--card-border)] mb-2 text-sm">
+                                    <span class="font-bold text-[var(--accent)] w-6 text-left">${s.placement}</span>
+                                    <span class="text-[var(--text-main)] flex-grow text-left truncate px-2 font-medium">${cleanName}</span>
+                                </div>
+                            `;
+                        }).join('');
+
+                        backCardHtml = `
+                            <button class="absolute top-3 left-3 bg-black/70 backdrop-blur-sm text-white p-2 rounded-full hover:bg-[var(--accent)] transition-colors z-10 flip-btn border border-white/10 shadow-lg" title="Back to Front">
+                                <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                            </button>
+                            <h3 class="text-xl font-bold mb-4 text-[var(--text-main)] w-full text-center border-b border-[var(--card-border)] pb-2">Top 8 Results</h3>
+                            <div class="w-full flex-grow overflow-y-auto pr-2 custom-scrollbar">
+                                ${top8List || '<p class="text-[var(--text-muted)] text-sm text-center mt-4">No results available yet.</p>'}
+                            </div>
+                            <a href="https://start.gg/${t.slug}" target="_blank" class="mt-4 btn-primary px-6 py-2 rounded-lg font-bold w-full text-center shadow-lg text-sm">View Full Bracket</a>
+                        `;
+                    } else {
+                        // Standard details for upcoming events
+                        const eventsList = t.events && t.events.length > 0 
+                            ? `<div class="mb-3 w-full text-left bg-black/20 p-3 rounded-lg border border-[var(--card-border)]"><p class="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1 font-bold">Events</p><ul class="text-sm text-[var(--text-main)] list-disc list-inside line-clamp-2">${t.events.map(e => `<li>${e.name}</li>`).join('')}</ul></div>`
+                            : '';
+                            
+                        const addressHtml = t.venueAddress 
+                            ? `<div class="mb-4 w-full text-left bg-black/20 p-3 rounded-lg border border-[var(--card-border)]"><p class="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1 font-bold">Address</p><p class="text-sm text-[var(--text-main)] line-clamp-2" title="${t.venueAddress}">${t.venueAddress}</p></div>`
+                            : '';
+
+                        backCardHtml = `
+                            <button class="absolute top-3 left-3 bg-black/70 backdrop-blur-sm text-white p-2 rounded-full hover:bg-[var(--accent)] transition-colors z-10 flip-btn border border-white/10 shadow-lg" title="Back to Front">
+                                <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                            </button>
+                            <h3 class="text-2xl font-bold mb-4 text-[var(--text-main)] w-full text-center border-b border-[var(--card-border)] pb-2">Details</h3>
+                            <div class="flex gap-3 mb-3 w-full justify-center">
+                                <div class="bg-black/20 p-3 rounded-lg flex-1 border border-[var(--card-border)]">
+                                    <p class="text-xs text-[var(--text-muted)] uppercase tracking-wide font-bold">Entrants</p>
+                                    <p class="text-xl font-black text-[var(--accent)]">${entrants}</p>
+                                </div>
+                                <div class="bg-black/20 p-3 rounded-lg flex-1 border border-[var(--card-border)] overflow-hidden">
+                                    <p class="text-xs text-[var(--text-muted)] uppercase tracking-wide font-bold">Organizer</p>
+                                    <p class="text-sm font-semibold text-[var(--text-main)] truncate mt-1" title="${t.owner?.player?.gamerTag || 'Unknown'}">${t.owner?.player?.gamerTag || 'Unknown'}</p>
+                                </div>
+                            </div>
+                            ${eventsList}
+                            ${addressHtml}
+                            <a href="https://start.gg/${t.slug}" target="_blank" class="mt-auto btn-primary px-6 py-3 rounded-lg font-bold w-full text-center shadow-lg">View on Start.gg</a>
+                        `;
+                    }
 
                     card.innerHTML = `
                         <div class="tournament-card-flipper">
@@ -554,23 +724,7 @@
                                 </div>
                             </div>
                             <div class="card-face card-back glass-panel relative">
-                                <button class="absolute top-3 left-3 bg-black/70 backdrop-blur-sm text-white p-2 rounded-full hover:bg-[var(--accent)] transition-colors z-10 flip-btn border border-white/10 shadow-lg" title="Back to Front">
-                                    <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                                </button>
-                                <h3 class="text-2xl font-bold mb-4 text-[var(--text-main)] w-full text-center border-b border-[var(--card-border)] pb-2">Details</h3>
-                                <div class="flex gap-3 mb-3 w-full justify-center">
-                                    <div class="bg-black/20 p-3 rounded-lg flex-1 border border-[var(--card-border)]">
-                                        <p class="text-xs text-[var(--text-muted)] uppercase tracking-wide font-bold">Entrants</p>
-                                        <p class="text-xl font-black text-[var(--accent)]">${entrants}</p>
-                                    </div>
-                                    <div class="bg-black/20 p-3 rounded-lg flex-1 border border-[var(--card-border)] overflow-hidden">
-                                        <p class="text-xs text-[var(--text-muted)] uppercase tracking-wide font-bold">Organizer</p>
-                                        <p class="text-sm font-semibold text-[var(--text-main)] truncate mt-1" title="${t.owner?.player?.gamerTag || 'Unknown'}">${t.owner?.player?.gamerTag || 'Unknown'}</p>
-                                    </div>
-                                </div>
-                                ${eventsList}
-                                ${addressHtml}
-                                <a href="https://start.gg/${t.slug}" target="_blank" class="mt-auto btn-primary px-6 py-3 rounded-lg font-bold w-full text-center shadow-lg">View on Start.gg</a>
+                                ${backCardHtml}
                             </div>
                         </div>
                     `;
@@ -589,13 +743,47 @@
             const filterAndRender = () => {
                 let filtered = state.allFetchedTournaments;
                 
+                // For the spotlight, pull out weeklies using the precise Whitelist approach
+                if (!state.showPast) {
+                    let spotlightWeeklies = [];
+                    const seenSeries = new Set();
+                    
+                    // Sort chronologically so we only grab the *next* upcoming event for each series
+                    const sortedTourneys = [...state.allFetchedTournaments].sort((a, b) => a.startAt - b.startAt);
+                    
+                    sortedTourneys.forEach(t => {
+                        // Check if the tournament name contains any of the strings in our whitelist
+                        const matchedSeries = WEEKLY_WHITELIST.find(seriesName => 
+                            t.name.toLowerCase().includes(seriesName.toLowerCase())
+                        );
+
+                        if (matchedSeries) {
+                            // Only capture the *next* occurrence of this specific weekly series
+                            if (!seenSeries.has(matchedSeries)) {
+                                spotlightWeeklies.push(t);
+                                seenSeries.add(matchedSeries);
+                            }
+                        }
+                    });
+
+                    // Apply the user's city/search filters to the spotlight too!
+                    if (state.activeCity) spotlightWeeklies = spotlightWeeklies.filter(t => t.city === state.activeCity);
+                    if (state.searchTerm) spotlightWeeklies = spotlightWeeklies.filter(t => t.name.toLowerCase().includes(state.searchTerm.toLowerCase()));
+
+                    renderWeeklies(spotlightWeeklies);
+                } else {
+                    renderWeeklies([]);
+                }
+
+                // Apply filters to main grid
                 if (state.activeCity) filtered = filtered.filter(t => t.city === state.activeCity);
+                if (state.searchTerm) filtered = filtered.filter(t => t.name.toLowerCase().includes(state.searchTerm.toLowerCase()));
                 
-                // Client-side sort by attendee count
+                // Client-side sort by attendee count (or by date desc if past)
                 filtered.sort((a, b) => {
                     const countA = a.participants?.pageInfo?.total || 0;
                     const countB = b.participants?.pageInfo?.total || 0;
-                    return state.showPast ? (b.startAt - a.startAt) : (countB - countA); // If upcoming, sort by size. If past, sort by date desc.
+                    return state.showPast ? (b.startAt - a.startAt) : (countB - countA);
                 });
 
                 state.tournaments = filtered;
@@ -606,25 +794,38 @@
                 renderSkeletons();
 
                 const timestamp = Math.floor(Date.now() / 1000);
-                let filter = { addrState: "OK", videogameIds: [state.activeGameId] };
-                let sortBy = 'startAt asc';
-
-                if (state.searchTerm) filter.name = state.searchTerm;
+                let filter = { addrState: "OK" };
                 
+                // RESTORED: Top-level game filter for the main query
+                if (state.activeGameId !== 0) {
+                    filter.videogameIds = [state.activeGameId];
+                }
+                
+                let sortBy = state.showPast ? 'startAt desc' : 'startAt asc';
+
                 if (state.showPast) {
                     filter.beforeDate = timestamp;
-                    sortBy = 'startAt desc';
                 } else {
                     filter.afterDate = timestamp;
                 }
 
-                const queryStr = GRAPHQL_QUERY.replace('$videogameId', state.activeGameId);
+                // Fix: Remove filter completely if activeGameId is 0, otherwise format correctly
+                let eventFilter = "";
+                if (state.activeGameId !== 0) {
+                    eventFilter = `(filter: { videogameId: [${state.activeGameId}] })`;
+                }
+                
+                const queryStr = getGraphQLQuery(state.showPast, eventFilter);
+                
+                // Fetch up to 100 for upcoming (safe bc no standings) to ensure we find weekly series
+                // Fetch max 30 for past (safe bc of heavy standings data)
+                const perPageFetch = state.showPast ? 30 : 100;
                 
                 try {
                     const res = await fetch(API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
-                        body: JSON.stringify({ query: queryStr, variables: { perPage: 100, page: 1, filter, sortBy } }),
+                        body: JSON.stringify({ query: queryStr, variables: { perPage: perPageFetch, page: 1, filter, sortBy } }),
                     });
                     const data = await res.json();
                     if (!data || data.errors) throw new Error(data.errors?.[0]?.message || 'API Error');
@@ -640,19 +841,27 @@
             const fetchFeatured = async () => {
                 const timestamp = Math.floor(Date.now() / 1000);
                 try {
-                    const queryStr = FEATURED_QUERY.replace('$videogameId', state.activeGameId);
+                    // Fix: Remove filter completely if activeGameId is 0, otherwise format correctly
+                    let eventFilter = "";
+                    if (state.activeGameId !== 0) {
+                        eventFilter = `(filter: { videogameId: [${state.activeGameId}] })`;
+                    }
+                        
+                    const queryStr = getFeaturedQuery(eventFilter);
+                    
+                    let filterParams = { addrState: "OK", afterDate: timestamp };
+                    
+                    // RESTORED: Top-level game filter for the featured query
+                    if (state.activeGameId !== 0) {
+                        filterParams.videogameIds = [state.activeGameId];
+                    }
+
                     const res = await fetch(API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
                         body: JSON.stringify({ 
                             query: queryStr, 
-                            variables: { 
-                                filter: { 
-                                    addrState: "OK", 
-                                    afterDate: timestamp,
-                                    videogameIds: [state.activeGameId]
-                                } 
-                            } 
+                            variables: { filter: filterParams } 
                         }),
                     });
                     const data = await res.json();
@@ -693,23 +902,33 @@
                 applyTheme(state.theme);
                 
                 // Filters
-                const triggerFetch = () => {
+                const triggerLocalRender = () => {
                     state.searchTerm = els.searchInput.value;
                     state.activeCity = els.citySelect.value;
-                    fetchTournaments();
+                    filterAndRender(); // Only run the local filter to avoid unnecessary API calls on search/city change
                 };
 
-                els.searchInput.addEventListener('input', () => { clearTimeout(state.debounceTimer); state.debounceTimer = setTimeout(triggerFetch, 500); });
-                els.citySelect.addEventListener('change', triggerFetch);
+                els.searchInput.addEventListener('input', () => { clearTimeout(state.debounceTimer); state.debounceTimer = setTimeout(triggerLocalRender, 300); });
+                els.citySelect.addEventListener('change', triggerLocalRender);
                 
-                els.btnUpcoming.addEventListener('click', () => { state.showPast = false; updateActiveToggleBtn(); triggerFetch(); });
-                els.btnPast.addEventListener('click', () => { state.showPast = true; updateActiveToggleBtn(); triggerFetch(); });
+                els.btnUpcoming.addEventListener('click', () => { 
+                    if (!state.showPast) return;
+                    state.showPast = false; updateActiveToggleBtn(); fetchTournaments(); 
+                });
+                els.btnPast.addEventListener('click', () => { 
+                    if (state.showPast) return;
+                    state.showPast = true; updateActiveToggleBtn(); fetchTournaments(); 
+                });
                 els.btnClearFilters.addEventListener('click', () => {
                     els.searchInput.value = '';
                     els.citySelect.value = '';
-                    state.showPast = false;
-                    updateActiveToggleBtn();
-                    triggerFetch();
+                    if(state.showPast) {
+                        state.showPast = false;
+                        updateActiveToggleBtn();
+                        fetchTournaments();
+                    } else {
+                        triggerLocalRender();
+                    }
                 });
 
                 // Theme Toggle
@@ -721,8 +940,22 @@
 
                 // Game Tabs
                 els.gameTabs.addEventListener('click', (e) => {
+                    const fgcOption = e.target.closest('.fgc-option');
                     const tab = e.target.closest('.game-tab');
-                    if (tab) {
+                    
+                    if (fgcOption) {
+                        els.gameTabs.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
+                        document.getElementById('fgc-tab').classList.add('active');
+                        state.activeGameId = parseInt(fgcOption.dataset.gameId, 10);
+                        fetchTournaments();
+                        fetchFeatured();
+                        
+                        // Briefly hide the dropdown to close it after selection on mobile
+                        const dropdown = fgcOption.closest('.absolute');
+                        dropdown.style.display = 'none';
+                        setTimeout(() => dropdown.style.display = '', 100);
+                        
+                    } else if (tab && tab.id !== 'fgc-tab') {
                         els.gameTabs.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
                         tab.classList.add('active');
                         state.activeGameId = parseInt(tab.dataset.gameId, 10);
