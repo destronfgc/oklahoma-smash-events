@@ -13,6 +13,12 @@
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#6366f1">
 
+    <!-- PWA Links -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="images/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -115,6 +121,15 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            transition: box-shadow 0.4s ease, border-color 0.4s ease;
+        }
+        .card-container:hover .card-face {
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+            border-color: rgba(99, 102, 241, 0.5);
+        }
+        .light-theme .card-container:hover .card-face {
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.3);
+            border-color: rgba(245, 158, 11, 0.5);
         }
         .card-back {
             transform: rotateY(180deg);
@@ -166,6 +181,58 @@
         .animate-text-shimmer {
             background-size: 200% auto;
             animation: text-shimmer 4s ease-in-out infinite;
+        }
+
+        /* Scroll Reveal Animations */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+        }
+        .scroll-reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Glowing Spinner Loader */
+        .loader-ring {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            position: relative;
+        }
+        .loader-ring:after {
+            content: " ";
+            display: block;
+            width: 32px;
+            height: 32px;
+            margin: 4px;
+            border-radius: 50%;
+            border: 3px solid var(--accent);
+            border-color: var(--accent) transparent var(--accent) transparent;
+            animation: loader-ring-anim 1.2s linear infinite;
+            box-shadow: 0 0 15px var(--accent);
+        }
+        @keyframes loader-ring-anim {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Radar Ping Animation for "Live" dots */
+        .radar-ping {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: rgba(239, 68, 68, 0.7);
+            animation: ping-anim 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+            z-index: -1;
+        }
+        @keyframes ping-anim {
+            75%, 100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
         }
 
         /* Game Tabs & View Toggles */
@@ -300,7 +367,7 @@
 
     <div class="container mx-auto px-4 py-8 max-w-7xl">
         <!-- Header -->
-        <header class="text-center mb-10 py-16 glass-panel rounded-2xl relative overflow-hidden min-h-[350px] flex flex-col justify-center">
+        <header id="main-header" class="text-center mb-10 py-16 glass-panel rounded-2xl relative overflow-hidden min-h-[350px] flex flex-col justify-center scroll-reveal">
             <!-- Animated Ambient Background -->
             <div class="absolute inset-0 bg-grid-pattern z-0"></div>
             <div class="absolute top-[-20%] left-[-10%] w-96 h-96 bg-indigo-500/40 rounded-full mix-blend-screen filter blur-[100px] animate-blob z-0 pointer-events-none"></div>
@@ -319,10 +386,10 @@
         </header>
 
         <!-- Featured Tournament Section -->
-        <div id="featured-tournament" class="mb-12"></div>
+        <div id="featured-tournament" class="mb-12 scroll-reveal"></div>
 
         <!-- Weekly Spotlight Section -->
-        <div id="weeklies-section" class="mb-12 hidden relative">
+        <div id="weeklies-section" class="mb-12 hidden relative scroll-reveal">
             <div class="absolute inset-0 bg-gradient-to-r from-[var(--accent)] to-purple-600 opacity-20 rounded-3xl blur-xl z-0"></div>
             
             <div class="relative glass-panel p-6 md:p-8 rounded-3xl z-10 border border-[var(--accent)]/30 shadow-2xl bg-black/10">
@@ -340,7 +407,7 @@
         </div>
 
         <!-- Game Tabs -->
-        <div id="game-tabs" class="flex flex-wrap justify-center items-center gap-6 mb-12 text-[var(--text-muted)]">
+        <div id="game-tabs" class="flex flex-wrap justify-center items-center gap-6 mb-12 text-[var(--text-muted)] scroll-reveal">
             <div class="game-tab active cursor-pointer p-3 rounded-xl" data-game-id="1386" title="Super Smash Bros. Ultimate">
                 <img src="images/ultimate-logo.png" class="h-10 ultimate-icon-glow" alt="Ultimate Icon">
             </div>
@@ -405,6 +472,7 @@
                 <div class="flex flex-col sm:flex-row gap-4 w-full lg:w-auto items-center flex-grow justify-end">
                     <select id="city-filter" class="w-full sm:w-auto px-4 py-2.5 bg-black/20 border border-[var(--card-border)] rounded-lg text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] cursor-pointer transition-all">
                         <option value="" class="bg-gray-800">All Cities</option>
+                        <option value="Online" class="bg-indigo-900 font-bold">🌐 Online / WiFi</option>
                         <option value="Oklahoma City" class="bg-gray-800">Oklahoma City</option>
                         <option value="Tulsa" class="bg-gray-800">Tulsa</option>
                         <option value="Norman" class="bg-gray-800">Norman</option>
@@ -425,7 +493,7 @@
             </div>
         </div>
 
-        <div id="stat-counter" class="text-center text-sm text-[var(--text-muted)] mb-6 font-medium"></div>
+        <div id="stat-counter" class="text-center text-sm text-[var(--text-muted)] mb-6 font-medium flex justify-center items-center h-10"></div>
         
         <!-- View Containers -->
         
@@ -433,12 +501,12 @@
         <div id="tournaments-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
         
         <!-- Map View (Hidden by default) -->
-        <div id="map-view-container" class="hidden glass-panel p-2 rounded-2xl border border-[var(--card-border)]">
+        <div id="map-view-container" class="hidden glass-panel p-2 rounded-2xl border border-[var(--card-border)] scroll-reveal">
             <div id="map-container"></div>
         </div>
 
         <!-- Calendar View (Hidden by default) -->
-        <div id="calendar-view-container" class="hidden glass-panel p-4 md:p-8 rounded-2xl border border-[var(--card-border)]">
+        <div id="calendar-view-container" class="hidden glass-panel p-4 md:p-8 rounded-2xl border border-[var(--card-border)] scroll-reveal">
             <div class="flex justify-between items-center mb-6">
                 <button id="cal-prev" class="p-2 hover:bg-black/20 rounded-lg text-[var(--text-main)] transition-colors"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
                 <h2 id="cal-month-title" class="text-3xl font-black tracking-wide text-[var(--text-main)] uppercase drop-shadow-sm">Month Year</h2>
@@ -459,7 +527,7 @@
         </div>
 
         <!-- Empty State (Hidden by default) -->
-        <div id="empty-state" class="hidden flex-col items-center justify-center py-20 text-center">
+        <div id="empty-state" class="hidden flex-col items-center justify-center py-20 text-center scroll-reveal">
             <svg class="w-24 h-24 text-[var(--text-muted)] mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <h3 class="text-2xl font-bold text-[var(--text-main)] mb-2">No Tournaments Found</h3>
             <p class="text-[var(--text-muted)] max-w-md">We couldn't find any events matching your current filters. Try checking a different view or clearing your search.</p>
@@ -467,7 +535,7 @@
         </div>
 
         <!-- Live Stream Embedded Section -->
-        <div class="mt-16 mb-8 relative group">
+        <div class="mt-16 mb-8 relative group scroll-reveal">
             <!-- Ambient Glow behind Twitch Player -->
             <div class="absolute inset-0 bg-[var(--accent)] opacity-5 group-hover:opacity-15 blur-2xl transition-opacity duration-700 rounded-3xl z-0 pointer-events-none"></div>
             
@@ -533,7 +601,8 @@
                 "ou_gamingclub",
                 "casualportal", 
                 "dz_fightclub", 
-                "oklahomasmash"
+                "oklahomasmash",
+                "trainer_lake"
             ]; 
 
             // SMART STREAM OVERRIDES
@@ -542,14 +611,15 @@
             const SMART_STREAM_OVERRIDES = {
                 "sooner dojo": "ou_gamingclub",
                 "smash at nsu": "casualportal",
-                "dz fight club": "dz_fightclub"
+                "dz fight club": "dz_fightclub",
+                "wifi is ok": "trainer_lake"
             };
 
             // Edit this list to control exactly which events appear in the Weekly Spotlight!
             const WEEKLY_WHITELIST = [
                 "Smash at NSU", "Casual Portal", "Breakpoint Weekly",
                 "The Weekly Contender", "DZ Fight Club", "Shieldpokes",
-                "Platnite", "ECU Tiger Smash Day", "Sooner Dojo"
+                "Platnite", "ECU Tiger Smash Day", "Sooner Dojo", "WiFi is OK"
             ];
             
             // Map Coordinates for OK Cities (Since Start.gg doesn't give Lat/Lng)
@@ -575,6 +645,21 @@
                 mapInstance: null,
                 mapMarkers: [],
                 streamPlaylist: [] // Holds the dynamic stream gallery list
+            };
+
+            // Setup Intersection Observer for scroll reveal animations
+            const revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if(entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                    }
+                });
+            }, { threshold: 0.05, rootMargin: "0px 0px -50px 0px" });
+
+            const triggerReveal = () => {
+                setTimeout(() => {
+                    document.querySelectorAll('.scroll-reveal:not(.active)').forEach(el => revealObserver.observe(el));
+                }, 50);
             };
 
             // Add the 'isOnline' field to the query to accurately verify live status
@@ -702,6 +787,7 @@
                 if (mode === 'grid') { els.gridContainer.classList.remove('hidden'); renderGrid(); }
                 if (mode === 'map') { els.mapContainer.classList.remove('hidden'); renderMap(); }
                 if (mode === 'calendar') { els.calendarContainer.classList.remove('hidden'); renderCalendar(); }
+                triggerReveal();
             };
 
             // ==========================================
@@ -720,7 +806,7 @@
                     <div class="glass-panel rounded-2xl overflow-hidden border border-[var(--accent)] shadow-[0_0_30px_rgba(99,102,241,0.2)]">
                         <div class="grid grid-cols-1 lg:grid-cols-2">
                             <div class="p-8 md:p-12 flex flex-col justify-center">
-                                <div class="inline-block px-3 py-1 rounded-full bg-[var(--accent)] text-white text-xs font-bold uppercase tracking-wider mb-4 w-max">★ Featured Event</div>
+                                <div class="inline-block px-3 py-1 rounded-full bg-[var(--accent)] text-white text-xs font-bold uppercase tracking-wider mb-4 w-max shadow-md">★ Featured Event</div>
                                 <h2 class="text-3xl md:text-5xl font-anton text-[var(--text-main)] mb-4 leading-tight">${t.name}</h2>
                                 <p class="text-lg text-[var(--text-muted)] mb-2 flex items-center gap-2">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -745,7 +831,7 @@
                                 </div>
                             </div>
                             <div class="h-64 lg:h-auto overflow-hidden">
-                                <img class="w-full h-full object-cover" src="${imgUrl}" alt="${t.name}">
+                                <img class="w-full h-full object-cover transition-transform duration-700 hover:scale-105" src="${imgUrl}" alt="${t.name}">
                             </div>
                         </div>
                     </div>
@@ -762,7 +848,7 @@
                 els.weekliesSection.classList.remove('hidden');
                 const now = Math.floor(Date.now() / 1000);
                 
-                els.weekliesList.innerHTML = weeklies.map(t => {
+                els.weekliesList.innerHTML = weeklies.map((t, index) => {
                     const startDate = new Date(t.startAt * 1000);
                     const dateStr = startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
                     const timeStr = startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -774,7 +860,14 @@
 
                     // Started within the last 14 hours
                     if (timeDiff <= 0 && timeDiff > -50400) { 
-                        badgeHtml = `<div class="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-black px-3 py-1.5 rounded-bl-xl rounded-tr-2xl shadow-lg flex items-center gap-1.5 z-20 uppercase tracking-widest"><span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>Live Now</div>`;
+                        badgeHtml = `
+                            <div class="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-black px-3 py-1.5 rounded-bl-xl rounded-tr-2xl shadow-lg flex items-center gap-2 z-20 uppercase tracking-widest">
+                                <div class="relative flex h-2.5 w-2.5 items-center justify-center">
+                                    <span class="radar-ping"></span>
+                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                                </div>
+                                Live Now
+                            </div>`;
                         cardHighlightClass = 'border-red-500/60 shadow-[0_0_20px_rgba(239,68,68,0.25)] bg-red-900/20';
                         neonEdgeColor = 'from-red-500 to-orange-500';
                     } 
@@ -785,8 +878,12 @@
                         neonEdgeColor = 'from-yellow-400 to-yellow-600';
                     }
 
+                    const isOnline = t.name.toLowerCase().includes('online') || t.name.toLowerCase().includes('wifi');
+                    const cityText = isOnline ? '🌐 Online' : (t.city || 'TBA');
+
+                    // Add scroll-reveal with staggered transition delays based on index
                     return `
-                    <a href="https://start.gg/${t.slug}" target="_blank" class="relative snap-start shrink-0 w-72 md:w-80 backdrop-blur-md p-5 rounded-2xl border transition-all flex flex-col gap-3 group overflow-hidden ${cardHighlightClass}">
+                    <a href="https://start.gg/${t.slug}" target="_blank" class="scroll-reveal relative snap-start shrink-0 w-72 md:w-80 backdrop-blur-md p-5 rounded-2xl border transition-all flex flex-col gap-3 group overflow-hidden ${cardHighlightClass}" style="transition-delay: ${index * 50}ms">
                         ${badgeHtml}
                         <!-- Decorative neon edge -->
                         <div class="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b ${neonEdgeColor} opacity-80 group-hover:opacity-100 transition-opacity"></div>
@@ -800,12 +897,13 @@
                             </p>
                             <p class="text-sm text-[var(--text-muted)] flex items-center gap-2">
                                 <span class="p-1.5 rounded-md bg-black/40 text-[var(--text-main)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg></span>
-                                <span class="truncate font-medium">${t.city || 'TBA'}</span>
+                                <span class="truncate font-medium ${isOnline ? 'text-indigo-400 font-bold' : ''}">${cityText}</span>
                             </p>
                         </div>
                     </a>
                     `;
                 }).join('');
+                triggerReveal();
             };
             
             // --- CALENDAR VIEW ---
@@ -876,6 +974,9 @@
 
                 const cityGroups = {};
                 state.tournaments.forEach(t => {
+                    const isOnline = t.name.toLowerCase().includes('online') || t.name.toLowerCase().includes('wifi');
+                    if (isOnline) return; // Completely skip online events for the map
+
                     const city = t.city || "Oklahoma City";
                     if (!cityGroups[city]) cityGroups[city] = [];
                     cityGroups[city].push(t);
@@ -933,7 +1034,8 @@
                 
                 state.tournaments.forEach((t, index) => {
                     const card = document.createElement('div');
-                    card.className = 'card-container';
+                    card.className = `card-container scroll-reveal`; // Added scroll-reveal
+                    card.style.transitionDelay = `${(index % 6) * 50}ms`; // Staggered intro
                     card.dataset.id = t.id;
                     
                     const imgUrl = t.images.length > 0 ? t.images[0].url : `https://placehold.co/600x400/1e293b/94a3b8?text=${encodeURIComponent(t.name)}`;
@@ -941,6 +1043,9 @@
                     const entrants = t.participants?.pageInfo?.total || 0;
                     const regOpen = t.registrationClosesAt ? new Date(t.registrationClosesAt * 1000) > new Date() : true;
                     
+                    const isOnline = t.name.toLowerCase().includes('online') || t.name.toLowerCase().includes('wifi');
+                    const cityText = isOnline ? '🌐 Online' : (t.city || 'TBA');
+
                     let winnerHtml = '';
                     let backCardHtml = '';
                     
@@ -1012,14 +1117,14 @@
                                 </button>
                                 <div class="relative h-48 overflow-hidden group">
                                     <img src="${imgUrl}" alt="${t.name}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='https://placehold.co/600x400/1e293b/94a3b8?text=Image+Not+Found';">
-                                    <div class="absolute top-3 right-3 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded text-xs font-bold border border-white/10">
+                                    <div class="absolute top-3 right-3 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded text-xs font-bold border border-white/10 shadow-lg">
                                         👥 ${entrants}
                                     </div>
                                 </div>
                                 <div class="p-6 flex flex-col flex-grow">
                                     <h3 class="text-xl font-bold mb-2 line-clamp-2 text-[var(--text-main)]" title="${t.name}">${t.name}</h3>
                                     <p class="text-[var(--text-muted)] text-sm mb-1 flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>${dateStr}</p>
-                                    <p class="text-[var(--text-muted)] text-sm mb-2 flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>${t.city || 'TBA'}</p>
+                                    <p class="text-[var(--text-muted)] text-sm mb-2 flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg><span class="${isOnline ? 'text-indigo-400 font-bold' : ''}">${cityText}</span></p>
                                     ${winnerHtml}
                                     
                                     <div class="mt-auto pt-6 flex items-center justify-between">
@@ -1044,8 +1149,8 @@
                         </div>
                     `;
                     els.gridContainer.appendChild(card);
-                    setTimeout(() => { card.querySelector('.tournament-card-flipper').classList.add('card-enter-animation'); }, index * 50);
                 });
+                triggerReveal();
             };
 
             // ==========================================
@@ -1068,15 +1173,26 @@
                         }
                     });
 
-                    if (state.activeCity) spotlightWeeklies = spotlightWeeklies.filter(t => t.city === state.activeCity);
+                    // Apply the user's city/search filters to the spotlight too!
+                    if (state.activeCity === 'Online') {
+                        spotlightWeeklies = spotlightWeeklies.filter(t => t.name.toLowerCase().includes('online') || t.name.toLowerCase().includes('wifi'));
+                    } else if (state.activeCity) {
+                        spotlightWeeklies = spotlightWeeklies.filter(t => t.city === state.activeCity && !(t.name.toLowerCase().includes('online') || t.name.toLowerCase().includes('wifi')));
+                    }
                     if (state.searchTerm) spotlightWeeklies = spotlightWeeklies.filter(t => t.name.toLowerCase().includes(state.searchTerm.toLowerCase()));
+                    
                     renderWeeklies(spotlightWeeklies);
                 } else {
                     renderWeeklies([]);
                 }
 
                 // Main Filters
-                if (state.activeCity) filtered = filtered.filter(t => t.city === state.activeCity);
+                if (state.activeCity === 'Online') {
+                    filtered = filtered.filter(t => t.name.toLowerCase().includes('online') || t.name.toLowerCase().includes('wifi'));
+                } else if (state.activeCity) {
+                    filtered = filtered.filter(t => t.city === state.activeCity && !(t.name.toLowerCase().includes('online') || t.name.toLowerCase().includes('wifi')));
+                }
+                
                 if (state.searchTerm) filtered = filtered.filter(t => t.name.toLowerCase().includes(state.searchTerm.toLowerCase()));
                 
                 filtered.sort((a, b) => {
@@ -1094,7 +1210,7 @@
 
             const fetchTournaments = async () => {
                 if (state.viewMode === 'grid') renderSkeletonsGrid();
-                else els.statCounter.textContent = 'Loading events...';
+                els.statCounter.innerHTML = '<div class="loader-ring"></div>';
 
                 const timestamp = Math.floor(Date.now() / 1000);
                 const LIVE_WINDOW = 14 * 60 * 60; // 14 hour buffer
@@ -1159,8 +1275,6 @@
                         const availableStreamsMap = new Map();
 
                         // 1. SMART OVERRIDE LOGIC
-                        // If the featured tournament matches one of our overrides, we force that channel into the map as "Live" 
-                        // so it completely bypasses whatever broken link the TO set up on Start.gg.
                         let smartChannelOverride = null;
                         for (const [tourneyName, actualChannel] of Object.entries(SMART_STREAM_OVERRIDES)) {
                             if (biggestTournament.name.toLowerCase().includes(tourneyName)) {
@@ -1312,6 +1426,18 @@
             const initializePage = () => {
                 applyTheme(state.theme);
                 
+                // Add base elements to observer
+                document.querySelectorAll('.scroll-reveal').forEach(el => revealObserver.observe(el));
+
+                // Header Parallax effect on scroll
+                window.addEventListener('scroll', () => {
+                    const scrolled = window.scrollY;
+                    const headerContent = document.querySelector('#main-header .relative.z-10');
+                    if (headerContent && scrolled < 500) {
+                        headerContent.style.transform = `translateY(${scrolled * 0.3}px)`;
+                    }
+                });
+                
                 // View Toggles
                 document.getElementById('view-grid').addEventListener('click', () => switchView('grid'));
                 document.getElementById('view-calendar').addEventListener('click', () => switchView('calendar'));
@@ -1403,6 +1529,17 @@
             };
 
             initializePage();
+            
+            // Register PWA Service Worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js').then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    }).catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+                });
+            }
         });
     </script>
 </body>
