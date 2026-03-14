@@ -472,15 +472,24 @@
             <div class="absolute inset-0 bg-[var(--accent)] opacity-5 group-hover:opacity-15 blur-2xl transition-opacity duration-700 rounded-3xl z-0 pointer-events-none"></div>
             
             <div class="relative glass-panel rounded-2xl overflow-hidden border border-[var(--card-border)] shadow-[0_0_30px_rgba(99,102,241,0.15)] z-10">
-                <div class="bg-black/40 p-4 border-b border-[var(--card-border)] flex items-center justify-between">
-                    <h3 id="twitch-stream-title" class="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
-                        Featured OK Stream
+                
+                <!-- NEW: Dynamic Stream Switcher Header -->
+                <div class="bg-black/40 p-4 border-b border-[var(--card-border)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h3 id="twitch-stream-title" class="text-xl font-bold text-[var(--text-main)] flex items-center gap-2 shrink-0">
+                        <span class="w-3 h-3 rounded-full bg-gray-500"></span>
+                        Loading Streams...
                     </h3>
-                    <a href="https://twitch.tv/oklahomasmash" id="twitch-link-out" target="_blank" class="text-sm text-[var(--accent)] hover:underline flex items-center gap-1">
+                    
+                    <!-- Stream Switcher Carousel -->
+                    <div id="stream-switcher" class="flex gap-2 overflow-x-auto pb-1 md:pb-0 hide-scrollbar w-full md:w-auto md:max-w-[60%] border-l-0 md:border-l border-[var(--card-border)] md:pl-4">
+                        <!-- Chips injected via JS -->
+                    </div>
+
+                    <a href="https://twitch.tv/" id="twitch-link-out" target="_blank" class="text-sm text-[var(--accent)] hover:underline items-center gap-1 shrink-0 hidden md:flex font-bold">
                         Watch on Twitch <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     </a>
                 </div>
+
                 <!-- Twitch Embed Container -->
                 <div class="aspect-video w-full bg-black relative" id="twitch-embed-container">
                     <!-- Script injects iframe here -->
@@ -519,15 +528,22 @@
             const API_KEY = 'd962f418dd0489a80b44305d874f673d';
             const API_URL = 'https://api.start.gg/gql/alpha';
             
-            // Twitch Fallback Streams if the featured tournament has none linked. 
-            // These act as a dynamic "gallery" pool of known active OK Smash streams.
+            // Twitch Fallback Streams. These fill the stream carousel if no live Start.gg streams exist.
             const FALLBACK_TWITCH_CHANNELS = [
+                "ou_gamingclub",
                 "casualportal", 
                 "dz_fightclub", 
-                "oklahomasmash", 
-                "shieldpokestv",
-                "ou_gamingclub"
+                "oklahomasmash"
             ]; 
+
+            // SMART STREAM OVERRIDES
+            // Maps parts of a tournament name to the ACTUAL Twitch channel. 
+            // Fixes TOs linking dead/incorrect channels on Start.gg!
+            const SMART_STREAM_OVERRIDES = {
+                "sooner dojo": "ou_gamingclub",
+                "smash at nsu": "casualportal",
+                "dz fight club": "dz_fightclub"
+            };
 
             // Edit this list to control exactly which events appear in the Weekly Spotlight!
             const WEEKLY_WHITELIST = [
@@ -552,15 +568,16 @@
                 searchTerm: '',
                 activeCity: '',
                 showPast: false,
-                viewMode: 'grid', // 'grid', 'calendar', 'map'
+                viewMode: 'grid', 
                 calendarDate: new Date(),
                 debounceTimer: null,
                 countdownInterval: null,
                 mapInstance: null,
-                mapMarkers: []
+                mapMarkers: [],
+                streamPlaylist: [] // Holds the dynamic stream gallery list
             };
 
-            // Dynamic Query Builder to avoid Complexity limits
+            // Add the 'isOnline' field to the query to accurately verify live status
             const getGraphQLQuery = (showPast, eventFilter) => `
                 query TournamentsByState($perPage: Int!, $page: Int!, $filter: TournamentPageFilter, $sortBy: String) {
                     tournaments(query: { perPage: $perPage, page: $page, filter: $filter, sortBy: $sortBy }) {
@@ -569,7 +586,7 @@
                             owner { id player { gamerTag } }
                             participants(query: {perPage: 1}) { pageInfo { total } }
                             images(type: "banner") { url }
-                            streams { streamName streamSource }
+                            streams { streamName streamSource isOnline }
                             events${eventFilter} {
                                 id slug name
                                 ${showPast ? `standings(query: { perPage: 8, page: 1 }) { nodes { placement entrant { id name } } }` : ''}
@@ -579,7 +596,6 @@
                 }
             `;
 
-            // Updated Featured Query to fetch stream info
             const getFeaturedQuery = (eventFilter) => `
                 query FeaturedTournament($filter: TournamentPageFilter) {
                     tournaments(query: { perPage: 15, page: 1, filter: $filter, sortBy: "startAt asc" }) {
@@ -587,7 +603,7 @@
                             id name slug startAt endAt city venueAddress registrationClosesAt
                             participants(query: {perPage: 1}) { pageInfo { total } }
                             images(type: "banner") { url }
-                            streams { streamName streamSource }
+                            streams { streamName streamSource isOnline }
                             events${eventFilter} { id name }
                         }
                     }
@@ -604,8 +620,6 @@
                 weekliesList: document.getElementById('weeklies-list'),
                 statCounter: document.getElementById('stat-counter'),
                 emptyState: document.getElementById('empty-state'),
-                
-                // Controls
                 searchInput: document.getElementById('search-box'),
                 citySelect: document.getElementById('city-filter'),
                 btnUpcoming: document.getElementById('btn-upcoming'),
@@ -615,8 +629,6 @@
                 gameTabs: document.getElementById('game-tabs'),
                 backToTop: document.getElementById('back-to-top-btn'),
                 toastContainer: document.getElementById('toast-container'),
-
-                // Views
                 viewBtns: document.querySelectorAll('.view-toggle-btn'),
                 gridContainer: document.getElementById('tournaments-list'),
                 mapContainer: document.getElementById('map-view-container'),
@@ -644,7 +656,6 @@
                 document.body.classList.toggle('light-theme', theme === 'light');
                 if (els.themeToggle) els.themeToggle.innerHTML = theme === 'light' ? moonIcon : sunIcon;
                 
-                // Update map tiles if map exists
                 if(state.mapInstance) {
                     state.mapInstance.eachLayer((layer) => { if(layer instanceof L.TileLayer) state.mapInstance.removeLayer(layer); });
                     const tileUrl = theme === 'light' ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -688,18 +699,9 @@
                     return;
                 }
 
-                if (mode === 'grid') {
-                    els.gridContainer.classList.remove('hidden');
-                    renderGrid();
-                }
-                if (mode === 'map') {
-                    els.mapContainer.classList.remove('hidden');
-                    renderMap();
-                }
-                if (mode === 'calendar') {
-                    els.calendarContainer.classList.remove('hidden');
-                    renderCalendar();
-                }
+                if (mode === 'grid') { els.gridContainer.classList.remove('hidden'); renderGrid(); }
+                if (mode === 'map') { els.mapContainer.classList.remove('hidden'); renderMap(); }
+                if (mode === 'calendar') { els.calendarContainer.classList.remove('hidden'); renderCalendar(); }
             };
 
             // ==========================================
@@ -819,7 +821,6 @@
                 
                 els.calGrid.innerHTML = '';
                 
-                // Group tournaments by Day
                 const dayEvents = {};
                 state.tournaments.forEach(t => {
                     const tDate = new Date(t.startAt * 1000);
@@ -830,7 +831,6 @@
                     }
                 });
 
-                // Blanks for first row
                 for (let i = 0; i < firstDay; i++) {
                     els.calGrid.innerHTML += `<div class="calendar-empty-day hidden sm:block"></div>`;
                 }
@@ -865,27 +865,23 @@
             // --- MAP VIEW ---
             const renderMap = () => {
                 if (!state.mapInstance) {
-                    state.mapInstance = L.map('map-container').setView([35.4676, -97.5164], 7); // Center OK
+                    state.mapInstance = L.map('map-container').setView([35.4676, -97.5164], 7); 
                     const tileUrl = state.theme === 'light' ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
                     L.tileLayer(tileUrl, { attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(state.mapInstance);
                 }
                 
                 setTimeout(() => state.mapInstance.invalidateSize(), 100);
-
-                // Clear old markers
                 state.mapMarkers.forEach(m => state.mapInstance.removeLayer(m));
                 state.mapMarkers = [];
 
-                // Group by city for map
                 const cityGroups = {};
                 state.tournaments.forEach(t => {
-                    const city = t.city || "Oklahoma City"; // Fallback to OKC if blank
+                    const city = t.city || "Oklahoma City";
                     if (!cityGroups[city]) cityGroups[city] = [];
                     cityGroups[city].push(t);
                 });
 
                 Object.keys(cityGroups).forEach(city => {
-                    // Try to get coords, or slightly randomize around OKC if unknown
                     let coords = OK_CITY_COORDS[city];
                     if (!coords) {
                         const spread = 0.5;
@@ -915,7 +911,7 @@
                 });
             };
 
-            // --- GRID VIEW (Original Cards) ---
+            // --- GRID VIEW ---
             const renderSkeletonsGrid = () => {
                 els.gridContainer.innerHTML = Array(6).fill(0).map(() => `
                     <div class="glass-panel rounded-2xl overflow-hidden h-[450px] flex flex-col">
@@ -1101,14 +1097,12 @@
                 else els.statCounter.textContent = 'Loading events...';
 
                 const timestamp = Math.floor(Date.now() / 1000);
-                const LIVE_WINDOW = 14 * 60 * 60; // 14 hour buffer to catch currently live events
+                const LIVE_WINDOW = 14 * 60 * 60; // 14 hour buffer
                 
                 let filter = { addrState: "OK" };
                 if (state.activeGameId !== 0) filter.videogameIds = [state.activeGameId];
                 
                 let sortBy = state.showPast ? 'startAt desc' : 'startAt asc';
-                
-                // Use the buffer to ensure ongoing events stay in the "Upcoming/Live" pool!
                 if (state.showPast) filter.beforeDate = timestamp - LIVE_WINDOW;
                 else filter.afterDate = timestamp - LIVE_WINDOW;
 
@@ -1136,7 +1130,7 @@
 
             const fetchFeatured = async () => {
                 const timestamp = Math.floor(Date.now() / 1000);
-                const LIVE_WINDOW = 14 * 60 * 60; // Ensure featured also looks back 14 hours for live events
+                const LIVE_WINDOW = 14 * 60 * 60; 
                 
                 try {
                     let eventFilter = state.activeGameId !== 0 ? `(filter: { videogameId: [${state.activeGameId}] })` : "";
@@ -1161,83 +1155,142 @@
                         
                         renderFeaturedTournament(biggestTournament);
                         
-                        // 1. Try to extract the Twitch channel from the Featured Tournament
-                        let channelToEmbed = null;
-                        if (biggestTournament.streams && biggestTournament.streams.length > 0) {
-                            const twitchStream = biggestTournament.streams.find(s => s.streamSource === 'TWITCH');
-                            if (twitchStream) {
-                                channelToEmbed = twitchStream.streamName;
+                        // --- DYNAMIC STREAM PLAYLIST BUILDER ---
+                        const availableStreamsMap = new Map();
+
+                        // 1. SMART OVERRIDE LOGIC
+                        // If the featured tournament matches one of our overrides, we force that channel into the map as "Live" 
+                        // so it completely bypasses whatever broken link the TO set up on Start.gg.
+                        let smartChannelOverride = null;
+                        for (const [tourneyName, actualChannel] of Object.entries(SMART_STREAM_OVERRIDES)) {
+                            if (biggestTournament.name.toLowerCase().includes(tourneyName)) {
+                                smartChannelOverride = actualChannel;
+                                availableStreamsMap.set(actualChannel, { name: actualChannel, isLive: true });
+                                break;
                             }
-                        }
-                        
-                        // 2. If no featured stream, collect ALL available streams from the 15 fetched upcoming tournaments
-                        if (!channelToEmbed) {
-                            const availableStreams = [];
-                            upcomingNodes.forEach(t => {
-                                if (t.streams) {
-                                    t.streams.forEach(s => {
-                                        if (s.streamSource === 'TWITCH' && s.streamName) {
-                                            availableStreams.push(s.streamName);
-                                        }
-                                    });
-                                }
-                            });
-                            
-                            // Pick a random stream from the upcoming tournaments if available
-                            if (availableStreams.length > 0) {
-                                channelToEmbed = availableStreams[Math.floor(Math.random() * availableStreams.length)];
-                            }
-                        }
-                        
-                        // 3. Ultimate Fallback to known active community streamers
-                        if (!channelToEmbed) {
-                            channelToEmbed = FALLBACK_TWITCH_CHANNELS[Math.floor(Math.random() * FALLBACK_TWITCH_CHANNELS.length)];
                         }
 
-                        initTwitch(channelToEmbed);
+                        // Gather all valid Twitch streams from the API response
+                        upcomingNodes.forEach(t => {
+                            if (t.streams) {
+                                t.streams.forEach(s => {
+                                    if (s.streamSource === 'TWITCH' && s.streamName) {
+                                        const sName = s.streamName.toLowerCase();
+                                        // Ignore the API's channel if we already forced a smart override for it
+                                        if (sName !== smartChannelOverride) {
+                                            if (!availableStreamsMap.has(sName) || (s.isOnline && !availableStreamsMap.get(sName).isLive)) {
+                                                availableStreamsMap.set(sName, {
+                                                    name: sName,
+                                                    isLive: s.isOnline === true
+                                                });
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        });
+
+                        state.streamPlaylist = [];
+
+                        // Build Playlist Priority 1: Start.gg confirmed LIVE streams + Our Smart Override
+                        for (const [name, data] of availableStreamsMap.entries()) {
+                            if (data.isLive) state.streamPlaylist.push(data);
+                        }
+
+                        // Build Playlist Priority 2: Add curated fallbacks
+                        FALLBACK_TWITCH_CHANNELS.forEach(name => {
+                            if (!state.streamPlaylist.find(x => x.name === name)) {
+                                // We don't know if fallbacks are actually live via Start.gg, mark as null (yellow dot)
+                                state.streamPlaylist.push({ name: name, isLive: null });
+                            }
+                        });
+
+                        // Build Playlist Priority 3: Add OFFLINE linked streams to the back of the queue (for VOD access)
+                        for (const [name, data] of availableStreamsMap.entries()) {
+                            if (!data.isLive && !state.streamPlaylist.find(x => x.name === name)) {
+                                state.streamPlaylist.push(data);
+                            }
+                        }
+
+                        // Fallback if literally empty
+                        if (state.streamPlaylist.length === 0) {
+                            state.streamPlaylist.push({ name: "tourneylocator", isLive: null });
+                        }
+
+                        // Initialize Twitch Player with the top priority stream
+                        renderTwitchPlayer(state.streamPlaylist[0].name);
                         
                     } else {
                         els.featured.innerHTML = '';
-                        initTwitch(FALLBACK_TWITCH_CHANNELS[Math.floor(Math.random() * FALLBACK_TWITCH_CHANNELS.length)]);
+                        state.streamPlaylist = FALLBACK_TWITCH_CHANNELS.map(name => ({name, isLive: null}));
+                        renderTwitchPlayer(state.streamPlaylist[0].name);
                     }
                 } catch (err) {
                     console.error("Featured fetch error:", err);
                     els.featured.innerHTML = '';
-                    initTwitch(FALLBACK_TWITCH_CHANNELS[Math.floor(Math.random() * FALLBACK_TWITCH_CHANNELS.length)]);
+                    state.streamPlaylist = FALLBACK_TWITCH_CHANNELS.map(name => ({name, isLive: null}));
+                    renderTwitchPlayer(state.streamPlaylist[0].name);
                 }
             };
 
             // ==========================================
             // 6. INITIALIZATION & EVENT LISTENERS
             // ==========================================
-            const initTwitch = (channelName) => {
+            
+            // Expose function globally for the onclick UI handlers in the Carousel
+            window.switchStream = (channelName) => {
+                renderTwitchPlayer(channelName);
+            };
+
+            const renderTwitchPlayer = (activeChannel) => {
                 const container = document.getElementById('twitch-embed-container');
                 const titleEl = document.getElementById('twitch-stream-title');
                 const linkEl = document.getElementById('twitch-link-out');
+                const switcherEl = document.getElementById('stream-switcher');
                 
-                // Update the section header to indicate who is being hosted
+                // Find the status of the active channel
+                const activeStreamObj = state.streamPlaylist.find(x => x.name === activeChannel);
+                const isConfirmedLive = activeStreamObj && activeStreamObj.isLive === true;
+
+                // Update the section header
                 if(titleEl) {
-                    titleEl.innerHTML = `<span class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>Featured Stream: ${channelName}`;
+                    titleEl.innerHTML = isConfirmedLive 
+                        ? `<span class="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>Live Stream: ${activeChannel}`
+                        : `<span class="w-3 h-3 rounded-full bg-gray-500"></span>Featured Stream: ${activeChannel}`;
                 }
                 if(linkEl) {
-                    linkEl.href = `https://twitch.tv/${channelName}`;
-                }
-                
-                // Twitch has strict security that blocks embeds inside nested preview sandboxes or local 'file://' paths.
-                // It will show "refused to connect" here, but will work perfectly once pushed to your actual host!
-                let currentHost = window.location.hostname;
-                
-                // If opened as a local file on your computer, fallback to localhost to prevent string errors
-                if (!currentHost || currentHost === "") {
-                    currentHost = "localhost";
+                    linkEl.href = `https://twitch.tv/${activeChannel}`;
                 }
 
-                // Optional: Hardcode your final GitHub Pages URL or custom domain here for 100% reliability
-                const productionDomain = "oklahomasmash.com"; // E.g., "yourname.github.io"
+                // Render the Stream Switcher Carousel UI
+                if (switcherEl) {
+                    switcherEl.innerHTML = state.streamPlaylist.map(s => {
+                        const isActive = s.name === activeChannel;
+                        const baseClasses = isActive
+                            ? "bg-[var(--accent)] text-white shadow-[0_0_10px_rgba(99,102,241,0.4)] border border-transparent"
+                            : "bg-black/30 text-[var(--text-muted)] hover:bg-black/50 hover:text-[var(--text-main)] border border-[var(--card-border)]";
+
+                        // Red = Confirmed Live, Yellow = Unknown/Fallback, Gray = Confirmed Offline
+                        let statusIcon = `<span class="w-2 h-2 rounded-full bg-yellow-500"></span>`; 
+                        if (s.isLive === true) {
+                            statusIcon = `<span class="w-2 h-2 rounded-full ${isActive ? 'bg-white animate-pulse' : 'bg-red-500 animate-pulse'}"></span>`;
+                        } else if (s.isLive === false) {
+                            statusIcon = `<span class="w-2 h-2 rounded-full bg-gray-600"></span>`;
+                        }
+
+                        return `<button class="px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${baseClasses}" onclick="window.switchStream('${s.name}')">
+                            ${statusIcon} ${s.name}
+                        </button>`;
+                    }).join('');
+                }
+                
+                let currentHost = window.location.hostname;
+                if (!currentHost || currentHost === "") currentHost = "localhost";
+                const productionDomain = "oklahomasmash.com";
 
                 container.innerHTML = `
                     <iframe
-                        src="https://player.twitch.tv/?channel=${channelName}&parent=${currentHost}&parent=${productionDomain}&parent=localhost&parent=aistudio.google.com&autoplay=true&muted=false"
+                        src="https://player.twitch.tv/?channel=${activeChannel}&parent=${currentHost}&parent=${productionDomain}&parent=localhost&parent=aistudio.google.com&autoplay=true&muted=false"
                         height="100%"
                         width="100%"
                         allowfullscreen="true"
