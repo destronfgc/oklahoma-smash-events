@@ -426,7 +426,7 @@
         </div>
 
         <!-- Game Tabs -->
-        <div id="game-tabs" class="flex flex-wrap justify-center items-center gap-6 mb-12 text-[var(--text-muted)] scroll-reveal">
+        <div id="game-tabs" class="relative z-50 flex flex-wrap justify-center items-center gap-6 mb-12 text-[var(--text-muted)] scroll-reveal">
             <div class="game-tab active cursor-pointer p-3 rounded-xl" data-game-id="1386" title="Super Smash Bros. Ultimate">
                 <img src="images/ultimate-logo.png" class="h-10 ultimate-icon-glow" alt="Ultimate Icon">
             </div>
@@ -623,6 +623,11 @@
         </div>
     </div>
     
+    <!-- Calendar Hover Tooltip -->
+    <div id="mini-event-tooltip" class="fixed pointer-events-none z-[120] hidden glass-panel rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-[var(--accent)] p-3 w-64 opacity-0 transition-opacity duration-200 bg-black/80 backdrop-blur-md">
+        <!-- Injected by JS -->
+    </div>
+
     <button id="back-to-top-btn" class="p-4 rounded-full btn-primary text-white z-50">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
     </button>
@@ -1136,8 +1141,8 @@
                     if (dayEvents[day]) {
                         // REPLACED anchor tags with button wrappers that trigger the new modal!
                         eventsHtml = dayEvents[day].map(t => `
-                            <button type="button" onclick="window.openEventModal('${t.id}')" class="flex items-center gap-1 text-white calendar-chip w-full text-left cursor-pointer border-none hover:!scale-100" title="${t.name}">
-                                <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            <button type="button" data-id="${t.id}" onclick="window.openEventModal('${t.id}')" class="flex items-center gap-1 text-white calendar-chip w-full text-left cursor-pointer border-none hover:!scale-100">
+                                <svg class="w-3 h-3 shrink-0 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                                 <span class="truncate pointer-events-none">${t.name}</span>
                             </button>
                         `).join('');
@@ -1671,6 +1676,75 @@
 
                 els.calPrev.addEventListener('click', () => { state.calendarDate.setMonth(state.calendarDate.getMonth() - 1); renderCalendar(); });
                 els.calNext.addEventListener('click', () => { state.calendarDate.setMonth(state.calendarDate.getMonth() + 1); renderCalendar(); });
+
+                // Calendar Hover Tooltip Logic
+                const tooltip = document.getElementById('mini-event-tooltip');
+                let tooltipTimeout;
+
+                els.calGrid.addEventListener('mouseover', (e) => {
+                    const chip = e.target.closest('.calendar-chip');
+                    if (chip) {
+                        const id = chip.dataset.id;
+                        const t = state.tournaments.find(x => x.id === id || x.id == parseInt(id));
+                        if (t) {
+                            const imgUrl = t.images && t.images.length > 0 ? t.images[0].url : `https://placehold.co/400x200/1e293b/94a3b8?text=${encodeURIComponent(t.name)}`;
+                            const dateStr = new Date(t.startAt * 1000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+                            const isOnline = t.name.toLowerCase().includes('online') || t.name.toLowerCase().includes('wifi');
+                            const cityText = isOnline ? '🌐 Online' : (t.city || 'TBA');
+                            
+                            tooltip.innerHTML = `
+                                <div class="h-24 w-full mb-2 rounded-md overflow-hidden border border-[var(--card-border)] relative">
+                                    <img src="${imgUrl}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x200/1e293b/94a3b8?text=Image+Not+Found';">
+                                    ${isOnline ? '<div class="absolute top-1 right-1 bg-indigo-600 text-white text-[9px] font-black px-2 py-0.5 rounded shadow-lg uppercase tracking-wide">Online</div>' : ''}
+                                </div>
+                                <h4 class="font-bold text-[var(--text-main)] text-sm line-clamp-2 leading-tight mb-1">${t.name}</h4>
+                                <p class="text-xs text-[var(--accent)] font-bold mb-0.5">${dateStr}</p>
+                                <p class="text-xs text-[var(--text-muted)] truncate flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                                    ${cityText}
+                                </p>
+                            `;
+                            
+                            tooltip.classList.remove('hidden');
+                            clearTimeout(tooltipTimeout);
+                            tooltipTimeout = setTimeout(() => {
+                                tooltip.classList.remove('opacity-0');
+                            }, 10);
+                        }
+                    }
+                });
+
+                els.calGrid.addEventListener('mousemove', (e) => {
+                    const chip = e.target.closest('.calendar-chip');
+                    if (chip && !tooltip.classList.contains('hidden')) {
+                        const rect = tooltip.getBoundingClientRect();
+                        let left = e.clientX + 15;
+                        let top = e.clientY + 15;
+                        
+                        if (left + rect.width > window.innerWidth) {
+                            left = e.clientX - rect.width - 15;
+                        }
+                        if (top + rect.height > window.innerHeight) {
+                            top = e.clientY - rect.height - 15;
+                        }
+                        
+                        tooltip.style.left = `${left}px`;
+                        tooltip.style.top = `${top}px`;
+                    }
+                });
+
+                els.calGrid.addEventListener('mouseout', (e) => {
+                    const chip = e.target.closest('.calendar-chip');
+                    if (chip) {
+                        clearTimeout(tooltipTimeout);
+                        tooltip.classList.add('opacity-0');
+                        setTimeout(() => {
+                            if (tooltip.classList.contains('opacity-0')) {
+                                tooltip.classList.add('hidden');
+                            }
+                        }, 200);
+                    }
+                });
 
                 const triggerLocalRender = () => {
                     state.searchTerm = els.searchInput.value;
