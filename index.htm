@@ -3,11 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO & Discord/Social Embed Meta Tags -->
     <title>Oklahoma Smash Tournaments</title>
+    <meta name="description" content="The official hub for Oklahoma Smash Bros and FGC tournaments. Find weeklies, monthlies, and majors near you.">
+    <meta property="og:title" content="Oklahoma Smash Tournaments">
+    <meta property="og:description" content="Find upcoming Smash Bros and FGC tournaments in Oklahoma. Discover locals, register for events, and watch the featured stream!">
+    <meta property="og:image" content="images/wereOK-logo.png">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#6366f1">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS for Map View -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
     <style>
         :root {
             /* Deep Space Dark Theme */
@@ -136,18 +149,19 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        /* Game Tabs */
-        .game-tab {
+        /* Game Tabs & View Toggles */
+        .game-tab, .view-toggle-btn {
             transition: all 0.3s ease;
             filter: grayscale(100%) opacity(0.6);
             transform: scale(0.95);
         }
-        .game-tab.active {
+        .game-tab.active, .view-toggle-btn.active {
             filter: grayscale(0%) opacity(1);
             transform: scale(1.1);
-            border-bottom: 3px solid var(--accent);
         }
-        .game-tab:hover:not(.active) {
+        .game-tab.active { border-bottom: 3px solid var(--accent); }
+        .view-toggle-btn.active { background-color: var(--accent); color: white; transform: scale(1); }
+        .game-tab:hover:not(.active), .view-toggle-btn:hover:not(.active) {
             filter: grayscale(50%) opacity(0.8);
             transform: scale(1);
         }
@@ -195,6 +209,58 @@
             to { transform: translateX(100%); opacity: 0; }
         }
 
+        /* Map styling overrides */
+        #map-container { height: 600px; z-index: 10; border-radius: 1rem; }
+        .leaflet-popup-content-wrapper { background: var(--bg-start); color: var(--text-main); border: 1px solid var(--accent); }
+        .leaflet-popup-tip { background: var(--accent); }
+        
+        /* Calendar styling upgrades */
+        .calendar-day { 
+            min-height: 130px; 
+            border: 1px solid var(--card-border); 
+            transition: all 0.3s ease; 
+            border-radius: 0.75rem; 
+            background: rgba(0,0,0,0.15);
+        }
+        .light-theme .calendar-day {
+            background: rgba(255,255,255,0.4);
+        }
+        .calendar-day:hover { 
+            border-color: var(--accent); 
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            background: rgba(0,0,0,0.25);
+        }
+        .calendar-day.today {
+            border: 2px solid var(--accent);
+            background: linear-gradient(to bottom, rgba(99,102,241,0.15), transparent);
+            box-shadow: 0 0 15px rgba(99,102,241,0.2) inset;
+        }
+        .calendar-empty-day {
+            min-height: 130px;
+            border: 1px dashed var(--card-border);
+            border-radius: 0.75rem;
+            opacity: 0.2;
+        }
+        .calendar-chip { 
+            font-size: 0.75rem; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            padding: 5px 8px; 
+            border-radius: 6px; 
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+        }
+        .calendar-chip:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(99,102,241,0.4);
+            filter: brightness(1.1);
+        }
+
         /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -234,7 +300,6 @@
 
         <!-- Weekly Spotlight Section -->
         <div id="weeklies-section" class="mb-12 hidden relative">
-            <!-- Neon background glow -->
             <div class="absolute inset-0 bg-gradient-to-r from-[var(--accent)] to-purple-600 opacity-20 rounded-3xl blur-xl z-0"></div>
             
             <div class="relative glass-panel p-6 md:p-8 rounded-3xl z-10 border border-[var(--accent)]/30 shadow-2xl bg-black/10">
@@ -269,7 +334,6 @@
                     <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                     <span class="font-bold text-sm uppercase hidden md:block tracking-wider">More FGC</span>
                 </div>
-                <!-- Dropdown Menu -->
                 <div class="absolute right-0 md:left-0 top-full mt-2 w-64 glass-panel rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 flex flex-col p-3 shadow-2xl border-[var(--accent)] border-t-2 gap-2">
                     <div class="fgc-option cursor-pointer p-2 hover:bg-black/20 rounded-lg transition-colors flex items-center justify-center h-14" data-game-id="43868" title="Street Fighter 6">
                         <img src="images/SF6-logo.png" alt="Street Fighter 6" class="max-h-full max-w-full object-contain drop-shadow-md">
@@ -290,15 +354,32 @@
 
         <!-- Sticky Controls Bar -->
         <div class="sticky top-4 z-40 mb-8">
-            <div id="controls-container" class="glass-panel rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div class="relative w-full md:w-1/3">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    </div>
-                    <input type="text" id="search-box" placeholder="Search tournaments..." class="w-full pl-10 pr-4 py-2.5 bg-black/20 border border-[var(--card-border)] rounded-lg text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-all">
-                </div>
+            <div id="controls-container" class="glass-panel rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center justify-between">
                 
-                <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-center">
+                <div class="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 custom-scrollbar">
+                    <!-- View Toggles -->
+                    <div class="flex items-center bg-black/20 p-1 rounded-lg border border-[var(--card-border)] shrink-0">
+                        <button id="view-grid" class="view-toggle-btn active px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2" title="Grid View">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                        </button>
+                        <button id="view-calendar" class="view-toggle-btn px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2" title="Calendar View">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </button>
+                        <button id="view-map" class="view-toggle-btn px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2" title="Map View">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                        </button>
+                    </div>
+
+                    <div class="h-6 w-px bg-[var(--card-border)] hidden lg:block"></div>
+
+                    <!-- Past / Upcoming Toggle -->
+                    <div class="flex items-center bg-black/20 p-1 rounded-lg border border-[var(--card-border)] shrink-0">
+                        <button id="btn-upcoming" class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors bg-[var(--accent)] text-white shadow">Upcoming</button>
+                        <button id="btn-past" class="px-4 py-1.5 rounded-md text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">Past</button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4 w-full lg:w-auto items-center flex-grow justify-end">
                     <select id="city-filter" class="w-full sm:w-auto px-4 py-2.5 bg-black/20 border border-[var(--card-border)] rounded-lg text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] cursor-pointer transition-all">
                         <option value="" class="bg-gray-800">All Cities</option>
                         <option value="Oklahoma City" class="bg-gray-800">Oklahoma City</option>
@@ -308,11 +389,14 @@
                         <option value="Broken Arrow" class="bg-gray-800">Broken Arrow</option>
                         <option value="Edmond" class="bg-gray-800">Edmond</option>
                         <option value="Stillwater" class="bg-gray-800">Stillwater</option>
+                        <option value="Shawnee" class="bg-gray-800">Shawnee</option>
                     </select>
 
-                    <div class="flex items-center bg-black/20 p-1 rounded-lg border border-[var(--card-border)]">
-                        <button id="btn-upcoming" class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors bg-[var(--accent)] text-white shadow">Upcoming</button>
-                        <button id="btn-past" class="px-4 py-1.5 rounded-md text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">Past</button>
+                    <div class="relative w-full sm:w-64">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <input type="text" id="search-box" placeholder="Search..." class="w-full pl-10 pr-4 py-2.5 bg-black/20 border border-[var(--card-border)] rounded-lg text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-all">
                     </div>
                 </div>
             </div>
@@ -320,21 +404,68 @@
 
         <div id="stat-counter" class="text-center text-sm text-[var(--text-muted)] mb-6 font-medium"></div>
         
-        <!-- Grid -->
+        <!-- View Containers -->
+        
+        <!-- Grid View -->
         <div id="tournaments-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
         
+        <!-- Map View (Hidden by default) -->
+        <div id="map-view-container" class="hidden glass-panel p-2 rounded-2xl border border-[var(--card-border)]">
+            <div id="map-container"></div>
+        </div>
+
+        <!-- Calendar View (Hidden by default) -->
+        <div id="calendar-view-container" class="hidden glass-panel p-4 md:p-8 rounded-2xl border border-[var(--card-border)]">
+            <div class="flex justify-between items-center mb-6">
+                <button id="cal-prev" class="p-2 hover:bg-black/20 rounded-lg text-[var(--text-main)] transition-colors"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                <h2 id="cal-month-title" class="text-3xl font-black tracking-wide text-[var(--text-main)] uppercase drop-shadow-sm">Month Year</h2>
+                <button id="cal-next" class="p-2 hover:bg-black/20 rounded-lg text-[var(--text-main)] transition-colors"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+            </div>
+            
+            <!-- Mobile scrolling wrapper for Calendar -->
+            <div class="w-full overflow-x-auto pb-4 custom-scrollbar">
+                <div class="min-w-[700px]">
+                    <div class="grid grid-cols-7 gap-2 md:gap-3 text-center font-black uppercase tracking-widest text-xs text-[var(--text-muted)] mb-3">
+                        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                    </div>
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-2 md:gap-3">
+                        <!-- Days injected via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Empty State (Hidden by default) -->
         <div id="empty-state" class="hidden flex-col items-center justify-center py-20 text-center">
             <svg class="w-24 h-24 text-[var(--text-muted)] mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <h3 class="text-2xl font-bold text-[var(--text-main)] mb-2">No Tournaments Found</h3>
-            <p class="text-[var(--text-muted)] max-w-md">We couldn't find any events matching your current filters. Try selecting a different city or checking past events.</p>
+            <p class="text-[var(--text-muted)] max-w-md">We couldn't find any events matching your current filters. Try checking a different view or clearing your search.</p>
             <button id="clear-filters-btn" class="mt-6 btn-primary px-6 py-2 rounded-lg font-medium">Clear Filters</button>
+        </div>
+
+        <!-- Live Stream Embedded Section -->
+        <div class="mt-16 mb-8">
+            <div class="glass-panel rounded-2xl overflow-hidden border border-[var(--card-border)]">
+                <div class="bg-black/40 p-4 border-b border-[var(--card-border)] flex items-center justify-between">
+                    <h3 id="twitch-stream-title" class="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
+                        Featured OK Stream
+                    </h3>
+                    <a href="https://twitch.tv/oklahomasmash" id="twitch-link-out" target="_blank" class="text-sm text-[var(--accent)] hover:underline flex items-center gap-1">
+                        Watch on Twitch <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    </a>
+                </div>
+                <!-- Twitch Embed Container -->
+                <div class="aspect-video w-full bg-black relative" id="twitch-embed-container">
+                    <!-- Script injects iframe here -->
+                </div>
+            </div>
         </div>
 
     </div>
 
     <!-- Footer -->
-    <footer class="glass-panel mt-20 border-b-0 border-x-0 border-t">
+    <footer class="glass-panel mt-10 border-b-0 border-x-0 border-t">
         <div class="container mx-auto px-4 py-8 text-center">
             <a href="https://discordapp.com/invite/ycZbHSz" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-3 text-lg text-[var(--text-main)] hover:text-[var(--accent)] transition-colors mb-4 group">
                 <svg class="w-8 h-8 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>
@@ -351,6 +482,9 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
+    <!-- Leaflet Map Script -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // ==========================================
@@ -359,19 +493,30 @@
             const API_KEY = 'd962f418dd0489a80b44305d874f673d';
             const API_URL = 'https://api.start.gg/gql/alpha';
             
+            // Twitch Fallback Streams if the featured tournament has none linked. 
+            // These act as a dynamic "gallery" pool of known active OK Smash streams.
+            const FALLBACK_TWITCH_CHANNELS = [
+                "casualportal", 
+                "dz_fightclub", 
+                "oklahomasmash", 
+                "shieldpokestv"
+            ]; 
+
             // Edit this list to control exactly which events appear in the Weekly Spotlight!
             const WEEKLY_WHITELIST = [
-                "Smash at NSU",
-                "Casual Portal",
-                "Breakpoint Weekly",
-                "The Weekly Contender",
-                "DZ Fight Club",
-                "Shieldpokes",
-                "Platnite",
-                "ECU Tiger Smash Day",
-                "Sooner Dojo"
+                "Smash at NSU", "Casual Portal", "Breakpoint Weekly",
+                "The Weekly Contender", "DZ Fight Club", "Shieldpokes",
+                "Platnite", "ECU Tiger Smash Day", "Sooner Dojo"
             ];
             
+            // Map Coordinates for OK Cities (Since Start.gg doesn't give Lat/Lng)
+            const OK_CITY_COORDS = {
+                "Oklahoma City": [35.4676, -97.5164], "Tulsa": [36.1540, -95.9928],
+                "Norman": [35.2226, -97.4395], "Edmond": [35.6528, -97.4781],
+                "Lawton": [34.6059, -98.3959], "Stillwater": [36.1156, -97.0584],
+                "Broken Arrow": [36.0365, -95.7836], "Shawnee": [35.3273, -96.9253]
+            };
+
             const state = {
                 activeGameId: 1386,
                 tournaments: [],
@@ -380,8 +525,12 @@
                 searchTerm: '',
                 activeCity: '',
                 showPast: false,
+                viewMode: 'grid', // 'grid', 'calendar', 'map'
+                calendarDate: new Date(),
                 debounceTimer: null,
-                countdownInterval: null
+                countdownInterval: null,
+                mapInstance: null,
+                mapMarkers: []
             };
 
             // Dynamic Query Builder to avoid Complexity limits
@@ -393,19 +542,17 @@
                             owner { id player { gamerTag } }
                             participants(query: {perPage: 1}) { pageInfo { total } }
                             images(type: "banner") { url }
+                            streams { streamName streamSource }
                             events${eventFilter} {
                                 id slug name
-                                ${showPast ? `
-                                standings(query: { perPage: 8, page: 1 }) {
-                                    nodes { placement entrant { id name } }
-                                }
-                                ` : ''}
+                                ${showPast ? `standings(query: { perPage: 8, page: 1 }) { nodes { placement entrant { id name } } }` : ''}
                             }
                         }
                     }
                 }
             `;
 
+            // Updated Featured Query to fetch stream info
             const getFeaturedQuery = (eventFilter) => `
                 query FeaturedTournament($filter: TournamentPageFilter) {
                     tournaments(query: { perPage: 15, page: 1, filter: $filter, sortBy: "startAt asc" }) {
@@ -413,6 +560,7 @@
                             id name slug startAt endAt city venueAddress registrationClosesAt
                             participants(query: {perPage: 1}) { pageInfo { total } }
                             images(type: "banner") { url }
+                            streams { streamName streamSource }
                             events${eventFilter} { id name }
                         }
                     }
@@ -429,6 +577,8 @@
                 weekliesList: document.getElementById('weeklies-list'),
                 statCounter: document.getElementById('stat-counter'),
                 emptyState: document.getElementById('empty-state'),
+                
+                // Controls
                 searchInput: document.getElementById('search-box'),
                 citySelect: document.getElementById('city-filter'),
                 btnUpcoming: document.getElementById('btn-upcoming'),
@@ -437,7 +587,17 @@
                 themeToggle: document.getElementById('theme-toggle'),
                 gameTabs: document.getElementById('game-tabs'),
                 backToTop: document.getElementById('back-to-top-btn'),
-                toastContainer: document.getElementById('toast-container')
+                toastContainer: document.getElementById('toast-container'),
+
+                // Views
+                viewBtns: document.querySelectorAll('.view-toggle-btn'),
+                gridContainer: document.getElementById('tournaments-list'),
+                mapContainer: document.getElementById('map-view-container'),
+                calendarContainer: document.getElementById('calendar-view-container'),
+                calGrid: document.getElementById('calendar-grid'),
+                calTitle: document.getElementById('cal-month-title'),
+                calPrev: document.getElementById('cal-prev'),
+                calNext: document.getElementById('cal-next')
             };
 
             // ==========================================
@@ -452,37 +612,17 @@
             };
 
             const applyTheme = (theme) => {
-                const themeToggle = document.getElementById('theme-toggle');
                 const sunIcon = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5h2.25a.75.75 0 01.75.75zM12 18.75a.75.75 0 01-.75.75v2.25a.75.75 0 011.5 0v-2.25a.75.75 0 01-.75-.75zM4.5 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H5.25a.75.75 0 01-.75-.75zM17.657 6.343a.75.75 0 010 1.06l-1.591 1.591a.75.75 0 11-1.06-1.06l1.591-1.591a.75.75 0 011.06 0zm-11.314 0a.75.75 0 011.06 0l1.591 1.591a.75.75 0 11-1.06 1.06L6.343 7.404a.75.75 0 010-1.06zm11.314 11.314a.75.75 0 01-1.06 0l-1.591-1.591a.75.75 0 111.06-1.06l1.591 1.591a.75.75 0 010 1.06zM7.404 17.657a.75.75 0 01-1.06 0l-1.591-1.591a.75.75 0 011.06-1.06l1.591 1.591a.75.75 0 010 1.06z"></path></svg>`;
                 const moonIcon = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-3.463 1.72-6.57 4.43-8.44a.75.75 0 01.818.162z" clip-rule="evenodd"></path></svg>`;
-                
                 document.body.classList.toggle('light-theme', theme === 'light');
-                if (themeToggle) {
-                    themeToggle.innerHTML = theme === 'light' ? moonIcon : sunIcon;
+                if (els.themeToggle) els.themeToggle.innerHTML = theme === 'light' ? moonIcon : sunIcon;
+                
+                // Update map tiles if map exists
+                if(state.mapInstance) {
+                    state.mapInstance.eachLayer((layer) => { if(layer instanceof L.TileLayer) state.mapInstance.removeLayer(layer); });
+                    const tileUrl = theme === 'light' ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+                    L.tileLayer(tileUrl, { attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(state.mapInstance);
                 }
-            };
-
-            const createIcsFile = (tournament) => {
-                const startDate = new Date(tournament.startAt * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-                const endDate = new Date(tournament.endAt * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-                const url = `https://start.gg/${tournament.slug}`;
-                const icsContent = [
-                    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//OklahomaSmash//EN',
-                    'BEGIN:VEVENT', `UID:${tournament.id}@oklahomasmash.com`,
-                    `DTSTAMP:${startDate}`, `DTSTART:${startDate}`, `DTEND:${endDate}`,
-                    `SUMMARY:${tournament.name}`, `DESCRIPTION:View details at ${url}`,
-                    `LOCATION:${tournament.venueAddress || tournament.city}`,
-                    'END:VEVENT', 'END:VCALENDAR'
-                ].join('\r\n');
-
-                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `${tournament.name}.ics`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                showToast('Calendar event downloaded!');
             };
 
             const startCountdown = (startTime) => {
@@ -503,29 +643,41 @@
                     countdownEl.innerHTML = `Starts in: ${d}d ${h}h ${m}m`;
                 };
                 update();
-                state.countdownInterval = setInterval(update, 60000); // Update every minute
+                state.countdownInterval = setInterval(update, 60000);
+            };
+
+            const switchView = (mode) => {
+                state.viewMode = mode;
+                els.viewBtns.forEach(btn => btn.classList.remove('active'));
+                document.getElementById(`view-${mode}`).classList.add('active');
+
+                els.gridContainer.classList.add('hidden');
+                els.mapContainer.classList.add('hidden');
+                els.calendarContainer.classList.add('hidden');
+                els.emptyState.classList.add('hidden');
+
+                if (state.tournaments.length === 0) {
+                    els.emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                if (mode === 'grid') {
+                    els.gridContainer.classList.remove('hidden');
+                    renderGrid();
+                }
+                if (mode === 'map') {
+                    els.mapContainer.classList.remove('hidden');
+                    renderMap();
+                }
+                if (mode === 'calendar') {
+                    els.calendarContainer.classList.remove('hidden');
+                    renderCalendar();
+                }
             };
 
             // ==========================================
-            // 4. RENDERING FUNCTIONS
+            // 4. RENDERING FUNCTIONS (GRID, CALENDAR, MAP)
             // ==========================================
-            const renderSkeletons = () => {
-                els.emptyState.classList.add('hidden');
-                els.list.innerHTML = Array(6).fill(0).map(() => `
-                    <div class="glass-panel rounded-2xl overflow-hidden h-[450px] flex flex-col">
-                        <div class="h-48 skeleton"></div>
-                        <div class="p-6 flex-grow flex flex-col gap-4">
-                            <div class="h-8 skeleton rounded-md w-3/4"></div>
-                            <div class="h-4 skeleton rounded-md w-1/2"></div>
-                            <div class="h-4 skeleton rounded-md w-2/3"></div>
-                            <div class="mt-auto flex justify-between">
-                                <div class="h-10 skeleton rounded-lg w-24"></div>
-                                <div class="h-10 skeleton rounded-lg w-24"></div>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            };
 
             const renderFeaturedTournament = (t) => {
                 if (!t) return els.featured.innerHTML = '';
@@ -579,22 +731,46 @@
                 }
                 
                 els.weekliesSection.classList.remove('hidden');
+                const now = Math.floor(Date.now() / 1000);
+                
                 els.weekliesList.innerHTML = weeklies.map(t => {
-                    const dateStr = new Date(t.startAt * 1000).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                    const startDate = new Date(t.startAt * 1000);
+                    const dateStr = startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                    const timeStr = startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    
+                    const timeDiff = t.startAt - now;
+                    let badgeHtml = '';
+                    let cardHighlightClass = 'border-[var(--card-border)] hover:border-[var(--accent)] hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] bg-black/20';
+                    let neonEdgeColor = 'from-[var(--accent)] to-purple-500';
+
+                    // Started within the last 14 hours
+                    if (timeDiff <= 0 && timeDiff > -50400) { 
+                        badgeHtml = `<div class="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-black px-3 py-1.5 rounded-bl-xl rounded-tr-2xl shadow-lg flex items-center gap-1.5 z-20 uppercase tracking-widest"><span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>Live Now</div>`;
+                        cardHighlightClass = 'border-red-500/60 shadow-[0_0_20px_rgba(239,68,68,0.25)] bg-red-900/20';
+                        neonEdgeColor = 'from-red-500 to-orange-500';
+                    } 
+                    // Starting within the next 12 hours
+                    else if (timeDiff > 0 && timeDiff <= 43200) { 
+                        badgeHtml = `<div class="absolute top-0 right-0 bg-yellow-500 text-black text-[10px] font-black px-3 py-1.5 rounded-bl-xl rounded-tr-2xl shadow-lg flex items-center gap-1.5 z-20 uppercase tracking-widest">Starting Soon</div>`;
+                        cardHighlightClass = 'border-yellow-500/60 shadow-[0_0_20px_rgba(234,179,8,0.2)] bg-yellow-900/20';
+                        neonEdgeColor = 'from-yellow-400 to-yellow-600';
+                    }
+
                     return `
-                    <a href="https://start.gg/${t.slug}" target="_blank" class="relative snap-start shrink-0 w-72 md:w-80 bg-black/20 backdrop-blur-md p-5 rounded-2xl hover:bg-black/40 border border-[var(--card-border)] hover:border-[var(--accent)] hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all flex flex-col gap-3 group overflow-hidden">
+                    <a href="https://start.gg/${t.slug}" target="_blank" class="relative snap-start shrink-0 w-72 md:w-80 backdrop-blur-md p-5 rounded-2xl border transition-all flex flex-col gap-3 group overflow-hidden ${cardHighlightClass}">
+                        ${badgeHtml}
                         <!-- Decorative neon edge -->
-                        <div class="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[var(--accent)] to-purple-500 opacity-70 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b ${neonEdgeColor} opacity-80 group-hover:opacity-100 transition-opacity"></div>
                         
-                        <h4 class="font-bold text-lg text-[var(--text-main)] truncate group-hover:text-[var(--accent)] transition-colors pl-2" title="${t.name}">${t.name}</h4>
+                        <h4 class="font-bold text-lg text-[var(--text-main)] truncate group-hover:text-[var(--accent)] transition-colors pl-2 pr-20" title="${t.name}">${t.name}</h4>
                         
                         <div class="flex flex-col gap-2 mt-1 pl-2">
                             <p class="text-sm text-[var(--text-muted)] flex items-center gap-2">
-                                <span class="p-1.5 rounded-md bg-[var(--card-border)] text-[var(--text-main)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></span>
-                                <span class="font-medium">${dateStr}</span>
+                                <span class="p-1.5 rounded-md bg-black/40 text-[var(--text-main)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span>
+                                <span class="font-medium">${dateStr} @ ${timeStr}</span>
                             </p>
                             <p class="text-sm text-[var(--text-muted)] flex items-center gap-2">
-                                <span class="p-1.5 rounded-md bg-[var(--card-border)] text-[var(--text-main)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg></span>
+                                <span class="p-1.5 rounded-md bg-black/40 text-[var(--text-main)]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg></span>
                                 <span class="truncate font-medium">${t.city || 'TBA'}</span>
                             </p>
                         </div>
@@ -602,17 +778,135 @@
                     `;
                 }).join('');
             };
-
-            const renderTournaments = () => {
-                els.list.innerHTML = '';
+            
+            // --- CALENDAR VIEW ---
+            const renderCalendar = () => {
+                const year = state.calendarDate.getFullYear();
+                const month = state.calendarDate.getMonth();
                 
-                if (state.tournaments.length === 0) {
-                    els.emptyState.classList.remove('hidden');
-                    els.statCounter.textContent = '';
-                    return;
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                els.calTitle.textContent = `${monthNames[month]} ${year}`;
+                
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                
+                els.calGrid.innerHTML = '';
+                
+                // Group tournaments by Day
+                const dayEvents = {};
+                state.tournaments.forEach(t => {
+                    const tDate = new Date(t.startAt * 1000);
+                    if (tDate.getFullYear() === year && tDate.getMonth() === month) {
+                        const day = tDate.getDate();
+                        if (!dayEvents[day]) dayEvents[day] = [];
+                        dayEvents[day].push(t);
+                    }
+                });
+
+                // Blanks for first row
+                for (let i = 0; i < firstDay; i++) {
+                    els.calGrid.innerHTML += `<div class="calendar-empty-day hidden sm:block"></div>`;
+                }
+
+                const today = new Date();
+                const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const isToday = isCurrentMonth && day === today.getDate();
+                    const bgClass = isToday ? 'today' : '';
+                    const textClass = isToday ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]';
+                    
+                    let eventsHtml = '';
+                    if (dayEvents[day]) {
+                        eventsHtml = dayEvents[day].map(t => `
+                            <a href="https://start.gg/${t.slug}" target="_blank" class="flex items-center gap-1 text-white calendar-chip" title="${t.name}">
+                                <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                <span class="truncate">${t.name}</span>
+                            </a>
+                        `).join('');
+                    }
+
+                    els.calGrid.innerHTML += `
+                        <div class="p-2 md:p-3 calendar-day ${bgClass} flex flex-col">
+                            <span class="${textClass} font-black text-right text-sm md:text-base mb-2">${day}</span>
+                            <div class="flex-grow overflow-y-auto custom-scrollbar flex flex-col gap-1 max-h-[80px]">${eventsHtml}</div>
+                        </div>
+                    `;
+                }
+            };
+
+            // --- MAP VIEW ---
+            const renderMap = () => {
+                if (!state.mapInstance) {
+                    state.mapInstance = L.map('map-container').setView([35.4676, -97.5164], 7); // Center OK
+                    const tileUrl = state.theme === 'light' ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+                    L.tileLayer(tileUrl, { attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(state.mapInstance);
                 }
                 
-                els.emptyState.classList.add('hidden');
+                setTimeout(() => state.mapInstance.invalidateSize(), 100);
+
+                // Clear old markers
+                state.mapMarkers.forEach(m => state.mapInstance.removeLayer(m));
+                state.mapMarkers = [];
+
+                // Group by city for map
+                const cityGroups = {};
+                state.tournaments.forEach(t => {
+                    const city = t.city || "Oklahoma City"; // Fallback to OKC if blank
+                    if (!cityGroups[city]) cityGroups[city] = [];
+                    cityGroups[city].push(t);
+                });
+
+                Object.keys(cityGroups).forEach(city => {
+                    // Try to get coords, or slightly randomize around OKC if unknown
+                    let coords = OK_CITY_COORDS[city];
+                    if (!coords) {
+                        const spread = 0.5;
+                        coords = [35.4676 + (Math.random() * spread - spread/2), -97.5164 + (Math.random() * spread - spread/2)];
+                    }
+
+                    const tCount = cityGroups[city].length;
+                    const popList = cityGroups[city].map(t => {
+                        const dateStr = new Date(t.startAt * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        return `<a href="https://start.gg/${t.slug}" target="_blank" class="block py-1 hover:text-[var(--accent)] border-b border-[var(--card-border)] last:border-0 truncate font-semibold">${dateStr}: ${t.name}</a>`;
+                    }).join('');
+
+                    const markerIcon = L.divIcon({
+                        className: 'custom-map-marker',
+                        html: `<div class="bg-[var(--accent)] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg border-2 border-white">${tCount}</div>`,
+                        iconSize: [32, 32]
+                    });
+
+                    const marker = L.marker(coords, { icon: markerIcon }).addTo(state.mapInstance)
+                        .bindPopup(`
+                            <div class="max-w-[200px] max-h-[200px] overflow-y-auto custom-scrollbar p-1">
+                                <h4 class="font-bold text-lg mb-2 sticky top-0 bg-[var(--bg-start)] z-10 border-b border-[var(--card-border)] pb-1">${city} Events</h4>
+                                ${popList}
+                            </div>
+                        `);
+                    state.mapMarkers.push(marker);
+                });
+            };
+
+            // --- GRID VIEW (Original Cards) ---
+            const renderSkeletonsGrid = () => {
+                els.gridContainer.innerHTML = Array(6).fill(0).map(() => `
+                    <div class="glass-panel rounded-2xl overflow-hidden h-[450px] flex flex-col">
+                        <div class="h-48 skeleton"></div>
+                        <div class="p-6 flex-grow flex flex-col gap-4">
+                            <div class="h-8 skeleton rounded-md w-3/4"></div>
+                            <div class="h-4 skeleton rounded-md w-1/2"></div>
+                            <div class="mt-auto flex justify-between">
+                                <div class="h-10 skeleton rounded-lg w-24"></div>
+                                <div class="h-10 skeleton rounded-lg w-24"></div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            };
+
+            const renderGrid = () => {
+                els.gridContainer.innerHTML = '';
                 
                 state.tournaments.forEach((t, index) => {
                     const card = document.createElement('div');
@@ -636,10 +930,9 @@
                             winnerHtml = `<div class="mt-4 p-3 bg-black/20 rounded-lg border border-yellow-500/30 text-sm">👑 <strong>Winner:</strong> ${sName}</div>`;
                         }
 
-                        // Top 8 details for the back of the card
                         const top8List = standingsNodes.map(s => {
                             const entrantName = s.entrant?.name || 'Unknown';
-                            const cleanName = entrantName.split('|').pop().trim(); // Removes sponsor for a cleaner list
+                            const cleanName = entrantName.split('|').pop().trim();
                             return `
                                 <div class="flex justify-between items-center bg-black/20 p-2 rounded-lg border border-[var(--card-border)] mb-2 text-sm">
                                     <span class="font-bold text-[var(--accent)] w-6 text-left">${s.placement}</span>
@@ -659,7 +952,6 @@
                             <a href="https://start.gg/${t.slug}" target="_blank" class="mt-4 btn-primary px-6 py-2 rounded-lg font-bold w-full text-center shadow-lg text-sm">View Full Bracket</a>
                         `;
                     } else {
-                        // Standard details for upcoming events
                         const eventsList = t.events && t.events.length > 0 
                             ? `<div class="mb-3 w-full text-left bg-black/20 p-3 rounded-lg border border-[var(--card-border)]"><p class="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1 font-bold">Events</p><ul class="text-sm text-[var(--text-main)] list-disc list-inside line-clamp-2">${t.events.map(e => `<li>${e.name}</li>`).join('')}</ul></div>`
                             : '';
@@ -728,13 +1020,9 @@
                             </div>
                         </div>
                     `;
-                    
-                    els.list.appendChild(card);
-                    // Staggered fade in
+                    els.gridContainer.appendChild(card);
                     setTimeout(() => { card.querySelector('.tournament-card-flipper').classList.add('card-enter-animation'); }, index * 50);
                 });
-
-                els.statCounter.textContent = `Showing ${state.tournaments.length} tournament${state.tournaments.length !== 1 ? 's' : ''} ${state.activeCity ? `in ${state.activeCity}` : 'in OK'}.`;
             };
 
             // ==========================================
@@ -743,43 +1031,31 @@
             const filterAndRender = () => {
                 let filtered = state.allFetchedTournaments;
                 
-                // For the spotlight, pull out weeklies using the precise Whitelist approach
+                // Pull out weeklies
                 if (!state.showPast) {
                     let spotlightWeeklies = [];
                     const seenSeries = new Set();
-                    
-                    // Sort chronologically so we only grab the *next* upcoming event for each series
                     const sortedTourneys = [...state.allFetchedTournaments].sort((a, b) => a.startAt - b.startAt);
                     
                     sortedTourneys.forEach(t => {
-                        // Check if the tournament name contains any of the strings in our whitelist
-                        const matchedSeries = WEEKLY_WHITELIST.find(seriesName => 
-                            t.name.toLowerCase().includes(seriesName.toLowerCase())
-                        );
-
-                        if (matchedSeries) {
-                            // Only capture the *next* occurrence of this specific weekly series
-                            if (!seenSeries.has(matchedSeries)) {
-                                spotlightWeeklies.push(t);
-                                seenSeries.add(matchedSeries);
-                            }
+                        const matchedSeries = WEEKLY_WHITELIST.find(seriesName => t.name.toLowerCase().includes(seriesName.toLowerCase()));
+                        if (matchedSeries && !seenSeries.has(matchedSeries)) {
+                            spotlightWeeklies.push(t);
+                            seenSeries.add(matchedSeries);
                         }
                     });
 
-                    // Apply the user's city/search filters to the spotlight too!
                     if (state.activeCity) spotlightWeeklies = spotlightWeeklies.filter(t => t.city === state.activeCity);
                     if (state.searchTerm) spotlightWeeklies = spotlightWeeklies.filter(t => t.name.toLowerCase().includes(state.searchTerm.toLowerCase()));
-
                     renderWeeklies(spotlightWeeklies);
                 } else {
                     renderWeeklies([]);
                 }
 
-                // Apply filters to main grid
+                // Main Filters
                 if (state.activeCity) filtered = filtered.filter(t => t.city === state.activeCity);
                 if (state.searchTerm) filtered = filtered.filter(t => t.name.toLowerCase().includes(state.searchTerm.toLowerCase()));
                 
-                // Client-side sort by attendee count (or by date desc if past)
                 filtered.sort((a, b) => {
                     const countA = a.participants?.pageInfo?.total || 0;
                     const countB = b.participants?.pageInfo?.total || 0;
@@ -787,38 +1063,31 @@
                 });
 
                 state.tournaments = filtered;
-                renderTournaments();
+                
+                els.statCounter.textContent = `Showing ${state.tournaments.length} tournament${state.tournaments.length !== 1 ? 's' : ''} ${state.activeCity ? `in ${state.activeCity}` : 'in OK'}.`;
+                
+                switchView(state.viewMode); // Renders correct view based on state
             };
 
             const fetchTournaments = async () => {
-                renderSkeletons();
+                if (state.viewMode === 'grid') renderSkeletonsGrid();
+                else els.statCounter.textContent = 'Loading events...';
 
                 const timestamp = Math.floor(Date.now() / 1000);
-                let filter = { addrState: "OK" };
+                const LIVE_WINDOW = 14 * 60 * 60; // 14 hour buffer to catch currently live events
                 
-                // RESTORED: Top-level game filter for the main query
-                if (state.activeGameId !== 0) {
-                    filter.videogameIds = [state.activeGameId];
-                }
+                let filter = { addrState: "OK" };
+                if (state.activeGameId !== 0) filter.videogameIds = [state.activeGameId];
                 
                 let sortBy = state.showPast ? 'startAt desc' : 'startAt asc';
+                
+                // Use the buffer to ensure ongoing events stay in the "Upcoming/Live" pool!
+                if (state.showPast) filter.beforeDate = timestamp - LIVE_WINDOW;
+                else filter.afterDate = timestamp - LIVE_WINDOW;
 
-                if (state.showPast) {
-                    filter.beforeDate = timestamp;
-                } else {
-                    filter.afterDate = timestamp;
-                }
-
-                // Fix: Remove filter completely if activeGameId is 0, otherwise format correctly
-                let eventFilter = "";
-                if (state.activeGameId !== 0) {
-                    eventFilter = `(filter: { videogameId: [${state.activeGameId}] })`;
-                }
+                let eventFilter = state.activeGameId !== 0 ? `(filter: { videogameId: [${state.activeGameId}] })` : "";
                 
                 const queryStr = getGraphQLQuery(state.showPast, eventFilter);
-                
-                // Fetch up to 100 for upcoming (safe bc no standings) to ensure we find weekly series
-                // Fetch max 30 for past (safe bc of heavy standings data)
                 const perPageFetch = state.showPast ? 30 : 100;
                 
                 try {
@@ -834,60 +1103,122 @@
                     filterAndRender();
                 } catch (err) {
                     console.error('Fetch error:', err);
-                    els.list.innerHTML = `<div class="col-span-full text-center text-red-400 p-8 glass-panel rounded-xl border border-red-500/30">Failed to load tournaments: ${err.message}</div>`;
+                    els.gridContainer.innerHTML = `<div class="col-span-full text-center text-red-400 p-8 glass-panel rounded-xl border border-red-500/30">Failed to load tournaments: ${err.message}</div>`;
                 }
             };
 
             const fetchFeatured = async () => {
                 const timestamp = Math.floor(Date.now() / 1000);
+                const LIVE_WINDOW = 14 * 60 * 60; // Ensure featured also looks back 14 hours for live events
+                
                 try {
-                    // Fix: Remove filter completely if activeGameId is 0, otherwise format correctly
-                    let eventFilter = "";
-                    if (state.activeGameId !== 0) {
-                        eventFilter = `(filter: { videogameId: [${state.activeGameId}] })`;
-                    }
-                        
+                    let eventFilter = state.activeGameId !== 0 ? `(filter: { videogameId: [${state.activeGameId}] })` : "";
                     const queryStr = getFeaturedQuery(eventFilter);
                     
-                    let filterParams = { addrState: "OK", afterDate: timestamp };
-                    
-                    // RESTORED: Top-level game filter for the featured query
-                    if (state.activeGameId !== 0) {
-                        filterParams.videogameIds = [state.activeGameId];
-                    }
+                    let filterParams = { addrState: "OK", afterDate: timestamp - LIVE_WINDOW };
+                    if (state.activeGameId !== 0) filterParams.videogameIds = [state.activeGameId];
 
                     const res = await fetch(API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
-                        body: JSON.stringify({ 
-                            query: queryStr, 
-                            variables: { filter: filterParams } 
-                        }),
+                        body: JSON.stringify({ query: queryStr, variables: { filter: filterParams } }),
                     });
                     const data = await res.json();
-                    if (!data || data.errors) throw new Error(data.errors?.[0]?.message || 'API Error for featured');
+                    if (!data || data.errors) throw new Error(data.errors?.[0]?.message || 'API Error');
                     
                     const upcomingNodes = data.data?.tournaments?.nodes;
                     if (upcomingNodes && upcomingNodes.length > 0) {
-                        // Find the tournament with the most entrants from the upcoming batch
                         const biggestTournament = upcomingNodes.reduce((prev, current) => {
-                            const prevCount = prev.participants?.pageInfo?.total || 0;
-                            const currCount = current.participants?.pageInfo?.total || 0;
-                            return (currCount > prevCount) ? current : prev;
+                            return ((current.participants?.pageInfo?.total || 0) > (prev.participants?.pageInfo?.total || 0)) ? current : prev;
                         });
+                        
                         renderFeaturedTournament(biggestTournament);
+                        
+                        // 1. Try to extract the Twitch channel from the Featured Tournament
+                        let channelToEmbed = null;
+                        if (biggestTournament.streams && biggestTournament.streams.length > 0) {
+                            const twitchStream = biggestTournament.streams.find(s => s.streamSource === 'TWITCH');
+                            if (twitchStream) {
+                                channelToEmbed = twitchStream.streamName;
+                            }
+                        }
+                        
+                        // 2. If no featured stream, collect ALL available streams from the 15 fetched upcoming tournaments
+                        if (!channelToEmbed) {
+                            const availableStreams = [];
+                            upcomingNodes.forEach(t => {
+                                if (t.streams) {
+                                    t.streams.forEach(s => {
+                                        if (s.streamSource === 'TWITCH' && s.streamName) {
+                                            availableStreams.push(s.streamName);
+                                        }
+                                    });
+                                }
+                            });
+                            
+                            // Pick a random stream from the upcoming tournaments if available
+                            if (availableStreams.length > 0) {
+                                channelToEmbed = availableStreams[Math.floor(Math.random() * availableStreams.length)];
+                            }
+                        }
+                        
+                        // 3. Ultimate Fallback to known active community streamers
+                        if (!channelToEmbed) {
+                            channelToEmbed = FALLBACK_TWITCH_CHANNELS[Math.floor(Math.random() * FALLBACK_TWITCH_CHANNELS.length)];
+                        }
+
+                        initTwitch(channelToEmbed);
+                        
                     } else {
                         els.featured.innerHTML = '';
+                        initTwitch(FALLBACK_TWITCH_CHANNELS[Math.floor(Math.random() * FALLBACK_TWITCH_CHANNELS.length)]);
                     }
                 } catch (err) {
                     console.error("Featured fetch error:", err);
                     els.featured.innerHTML = '';
+                    initTwitch(FALLBACK_TWITCH_CHANNELS[Math.floor(Math.random() * FALLBACK_TWITCH_CHANNELS.length)]);
                 }
             };
 
             // ==========================================
             // 6. INITIALIZATION & EVENT LISTENERS
             // ==========================================
+            const initTwitch = (channelName) => {
+                const container = document.getElementById('twitch-embed-container');
+                const titleEl = document.getElementById('twitch-stream-title');
+                const linkEl = document.getElementById('twitch-link-out');
+                
+                // Update the section header to indicate who is being hosted
+                if(titleEl) {
+                    titleEl.innerHTML = `<span class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>Featured Stream: ${channelName}`;
+                }
+                if(linkEl) {
+                    linkEl.href = `https://twitch.tv/${channelName}`;
+                }
+                
+                // Twitch has strict security that blocks embeds inside nested preview sandboxes or local 'file://' paths.
+                // It will show "refused to connect" here, but will work perfectly once pushed to your actual host!
+                let currentHost = window.location.hostname;
+                
+                // If opened as a local file on your computer, fallback to localhost to prevent string errors
+                if (!currentHost || currentHost === "") {
+                    currentHost = "localhost";
+                }
+
+                // Optional: Hardcode your final GitHub Pages URL or custom domain here for 100% reliability
+                const productionDomain = "oklahomasmash.com"; // E.g., "yourname.github.io"
+
+                container.innerHTML = `
+                    <iframe
+                        src="https://player.twitch.tv/?channel=${channelName}&parent=${currentHost}&parent=${productionDomain}&parent=localhost&parent=aistudio.google.com&autoplay=true&muted=false"
+                        height="100%"
+                        width="100%"
+                        allowfullscreen="true"
+                        style="border: none;">
+                    </iframe>
+                `;
+            };
+
             const updateActiveToggleBtn = () => {
                 if(state.showPast) {
                     els.btnPast.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-colors bg-[var(--accent)] text-white shadow";
@@ -901,11 +1232,20 @@
             const initializePage = () => {
                 applyTheme(state.theme);
                 
+                // View Toggles
+                document.getElementById('view-grid').addEventListener('click', () => switchView('grid'));
+                document.getElementById('view-calendar').addEventListener('click', () => switchView('calendar'));
+                document.getElementById('view-map').addEventListener('click', () => switchView('map'));
+
+                // Calendar Controls
+                els.calPrev.addEventListener('click', () => { state.calendarDate.setMonth(state.calendarDate.getMonth() - 1); renderCalendar(); });
+                els.calNext.addEventListener('click', () => { state.calendarDate.setMonth(state.calendarDate.getMonth() + 1); renderCalendar(); });
+
                 // Filters
                 const triggerLocalRender = () => {
                     state.searchTerm = els.searchInput.value;
                     state.activeCity = els.citySelect.value;
-                    filterAndRender(); // Only run the local filter to avoid unnecessary API calls on search/city change
+                    filterAndRender();
                 };
 
                 els.searchInput.addEventListener('input', () => { clearTimeout(state.debounceTimer); state.debounceTimer = setTimeout(triggerLocalRender, 300); });
@@ -923,22 +1263,16 @@
                     els.searchInput.value = '';
                     els.citySelect.value = '';
                     if(state.showPast) {
-                        state.showPast = false;
-                        updateActiveToggleBtn();
-                        fetchTournaments();
-                    } else {
-                        triggerLocalRender();
-                    }
+                        state.showPast = false; updateActiveToggleBtn(); fetchTournaments();
+                    } else triggerLocalRender();
                 });
 
-                // Theme Toggle
                 els.themeToggle.addEventListener('click', () => {
                     state.theme = state.theme === 'dark' ? 'light' : 'dark';
                     localStorage.setItem('theme', state.theme);
                     applyTheme(state.theme);
                 });
 
-                // Game Tabs
                 els.gameTabs.addEventListener('click', (e) => {
                     const fgcOption = e.target.closest('.fgc-option');
                     const tab = e.target.closest('.game-tab');
@@ -947,72 +1281,47 @@
                         els.gameTabs.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
                         document.getElementById('fgc-tab').classList.add('active');
                         state.activeGameId = parseInt(fgcOption.dataset.gameId, 10);
-                        fetchTournaments();
-                        fetchFeatured();
-                        
-                        // Briefly hide the dropdown to close it after selection on mobile
+                        fetchTournaments(); fetchFeatured();
                         const dropdown = fgcOption.closest('.absolute');
-                        dropdown.style.display = 'none';
-                        setTimeout(() => dropdown.style.display = '', 100);
-                        
+                        dropdown.style.display = 'none'; setTimeout(() => dropdown.style.display = '', 100);
                     } else if (tab && tab.id !== 'fgc-tab') {
                         els.gameTabs.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
                         tab.classList.add('active');
                         state.activeGameId = parseInt(tab.dataset.gameId, 10);
-                        fetchTournaments();
-                        fetchFeatured();
+                        fetchTournaments(); fetchFeatured();
                     }
                 });
 
-                // Card Actions Delegation
-                els.list.addEventListener('click', (e) => {
+                // Grid Card Actions
+                els.gridContainer.addEventListener('click', (e) => {
                     const shareBtn = e.target.closest('.share-btn');
                     const calBtn = e.target.closest('.calendar-btn');
                     const flipBtn = e.target.closest('.flip-btn');
                     
-                    if (flipBtn) {
-                        e.stopPropagation();
-                        const cardContainer = e.target.closest('.card-container');
-                        if (cardContainer) {
-                            cardContainer.classList.toggle('is-flipped');
-                        }
-                    }
-                    
+                    if (flipBtn) { e.stopPropagation(); e.target.closest('.card-container').classList.toggle('is-flipped'); }
                     if (calBtn) {
                         e.stopPropagation();
                         const id = parseInt(e.target.closest('.card-container').dataset.id, 10);
                         const t = state.tournaments.find(x => x.id === id);
                         if (t) createIcsFile(t);
                     }
-
                     if (shareBtn) {
                         e.stopPropagation();
-                        const link = shareBtn.dataset.link;
                         const ta = document.createElement("textarea");
-                        ta.value = link;
-                        document.body.appendChild(ta);
-                        ta.select();
-                        try {
-                            document.execCommand('copy');
-                            showToast("Link Copied to Clipboard!");
-                        } catch (err) {}
+                        ta.value = shareBtn.dataset.link;
+                        document.body.appendChild(ta); ta.select();
+                        try { document.execCommand('copy'); showToast("Link Copied!"); } catch (err) {}
                         document.body.removeChild(ta);
                     }
                 });
 
-                // Scroll to Top
-                window.addEventListener('scroll', () => {
-                    if (window.scrollY > 400) els.backToTop.classList.add('show');
-                    else els.backToTop.classList.remove('show');
-                });
+                window.addEventListener('scroll', () => { els.backToTop.classList.toggle('show', window.scrollY > 400); });
                 els.backToTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
-                // Initial Data Load
                 fetchFeatured();
                 fetchTournaments();
             };
 
-            // Bootstrap App
             initializePage();
         });
     </script>
