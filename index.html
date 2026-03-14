@@ -351,6 +351,23 @@
             filter: brightness(1.1);
         }
 
+        /* Venue Modal Overlay Styles */
+        #venue-modal {
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        #venue-modal-content {
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: scale(0.95);
+        }
+        #venue-modal:not(.hidden) { opacity: 1; pointer-events: auto; }
+        #venue-modal:not(.hidden) #venue-modal-content { transform: scale(1); }
+
+        /* Draggable Carousel Cursors */
+        .cursor-grab { cursor: grab; }
+        .cursor-grabbing { cursor: grabbing !important; }
+
         /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -365,7 +382,7 @@
 </head>
 <body class="antialiased selection:bg-indigo-500 selection:text-white">
 
-    <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <div class="mx-auto px-4 md:px-8 py-8 w-full max-w-[1600px] 2xl:max-w-[2200px]">
         <!-- Header -->
         <header id="main-header" class="text-center mb-10 py-16 glass-panel rounded-2xl relative overflow-hidden min-h-[350px] flex flex-col justify-center scroll-reveal">
             <!-- Animated Ambient Background -->
@@ -400,7 +417,7 @@
                     </h3>
                     <span class="text-xs font-bold bg-[var(--accent)] text-white px-4 py-1.5 rounded-full shadow-lg border border-white/20 uppercase tracking-wide">Upcoming Weeklies</span>
                 </div>
-                <div id="weeklies-list" class="flex overflow-x-auto gap-5 pb-4 px-2 snap-x hide-scrollbar">
+                <div id="weeklies-list" class="flex overflow-x-auto gap-5 pb-4 px-2 snap-x hide-scrollbar cursor-grab">
                     <!-- Weeklies injected here -->
                 </div>
             </div>
@@ -446,7 +463,7 @@
         <div class="sticky top-4 z-40 mb-8 transition-shadow duration-300 hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)] rounded-xl">
             <div id="controls-container" class="glass-panel backdrop-blur-xl rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center justify-between shadow-lg border-b border-[var(--accent)]/20">
                 
-                <div class="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 custom-scrollbar">
+                <div id="controls-scroll-area" class="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 custom-scrollbar cursor-grab lg:cursor-auto">
                     <!-- View Toggles -->
                     <div class="flex items-center bg-black/20 p-1 rounded-lg border border-[var(--card-border)] shrink-0">
                         <button id="view-grid" class="view-toggle-btn active px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2" title="Grid View">
@@ -467,6 +484,12 @@
                         <button id="btn-upcoming" class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors bg-[var(--accent)] text-white shadow">Upcoming</button>
                         <button id="btn-past" class="px-4 py-1.5 rounded-md text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">Past</button>
                     </div>
+
+                    <!-- Venue Guide Button -->
+                    <button id="btn-open-venues" class="ml-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors bg-black/20 text-[var(--text-main)] border border-[var(--card-border)] hover:bg-[var(--accent)] hover:text-white flex items-center gap-2 shrink-0 shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Venue Guide
+                    </button>
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-4 w-full lg:w-auto items-center flex-grow justify-end">
@@ -498,7 +521,7 @@
         <!-- View Containers -->
         
         <!-- Grid View -->
-        <div id="tournaments-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+        <div id="tournaments-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 xl:gap-8"></div>
         
         <!-- Map View (Hidden by default) -->
         <div id="map-view-container" class="hidden glass-panel p-2 rounded-2xl border border-[var(--card-border)] scroll-reveal">
@@ -541,7 +564,7 @@
             
             <div class="relative glass-panel rounded-2xl overflow-hidden border border-[var(--card-border)] shadow-[0_0_30px_rgba(99,102,241,0.15)] z-10">
                 
-                <!-- NEW: Dynamic Stream Switcher Header -->
+                <!-- Dynamic Stream Switcher Header -->
                 <div class="bg-black/40 p-4 border-b border-[var(--card-border)] flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <h3 id="twitch-stream-title" class="text-xl font-bold text-[var(--text-main)] flex items-center gap-2 shrink-0">
                         <span class="w-3 h-3 rounded-full bg-gray-500"></span>
@@ -549,7 +572,7 @@
                     </h3>
                     
                     <!-- Stream Switcher Carousel -->
-                    <div id="stream-switcher" class="flex gap-2 overflow-x-auto pb-1 md:pb-0 hide-scrollbar w-full md:w-auto md:max-w-[60%] border-l-0 md:border-l border-[var(--card-border)] md:pl-4">
+                    <div id="stream-switcher" class="flex gap-2 overflow-x-auto pb-1 md:pb-0 hide-scrollbar w-full md:w-auto md:max-w-[60%] border-l-0 md:border-l border-[var(--card-border)] md:pl-4 cursor-grab">
                         <!-- Chips injected via JS -->
                     </div>
 
@@ -577,6 +600,25 @@
             <p class="text-[var(--text-muted)] text-sm">Powered by the <a href="https://start.gg/dev" target="_blank" class="text-[var(--accent)] hover:underline">start.gg API</a></p>
         </div>
     </footer>
+
+    <!-- VENUE DIRECTORY OVERLAY MODAL -->
+    <div id="venue-modal" class="fixed inset-0 bg-black/60 z-[100] hidden flex items-center justify-center p-4">
+        <div id="venue-modal-content" class="glass-panel w-full max-w-4xl max-h-[90vh] rounded-2xl flex flex-col overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] border-2 border-[var(--card-border)] relative">
+            
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-[var(--card-border)] flex justify-between items-center bg-black/20 sticky top-0 z-10 backdrop-blur-md">
+                <h2 class="text-3xl font-anton text-gradient tracking-wide">VENUE GUIDE</h2>
+                <button id="btn-close-venues" class="p-2 rounded-full hover:bg-white/10 transition-colors text-[var(--text-main)]">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Modal Body (Injected via JS) -->
+            <div id="venue-grid" class="p-6 overflow-y-auto custom-scrollbar flex-grow grid grid-cols-1 md:grid-cols-2 gap-6 bg-gradient-to-b from-transparent to-black/10">
+                <!-- Venues load here -->
+            </div>
+        </div>
+    </div>
     
     <button id="back-to-top-btn" class="p-4 rounded-full btn-primary text-white z-50">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
@@ -596,39 +638,67 @@
             const API_KEY = 'd962f418dd0489a80b44305d874f673d';
             const API_URL = 'https://api.start.gg/gql/alpha';
             
-            // Twitch Fallback Streams. These fill the stream carousel if no live Start.gg streams exist.
-            const FALLBACK_TWITCH_CHANNELS = [
-                "ou_gamingclub",
-                "casualportal", 
-                "dz_fightclub", 
-                "oklahomasmash",
-                "trainer_lake"
+            // Re-structured Fallbacks to include Platform type
+            const FALLBACK_STREAMS = [
+                { name: "ou_gamingclub", platform: "TWITCH" },
+                { name: "casualportal", platform: "TWITCH" },
+                { name: "dz_fightclub", platform: "TWITCH" },
+                { name: "oklahomasmash", platform: "TWITCH" },
+                { name: "trainer_lake", platform: "TWITCH" }
             ]; 
 
-            // SMART STREAM OVERRIDES
-            // Maps parts of a tournament name to the ACTUAL Twitch channel. 
-            // Fixes TOs linking dead/incorrect channels on Start.gg!
+            // Multi-Platform Smart Overrides
             const SMART_STREAM_OVERRIDES = {
-                "sooner dojo": "ou_gamingclub",
-                "smash at nsu": "casualportal",
-                "dz fight club": "dz_fightclub",
-                "wifi is ok": "trainer_lake"
+                "sooner dojo": { platform: "TWITCH", channel: "ou_gamingclub" },
+                "smash at nsu": { platform: "TWITCH", channel: "casualportal" },
+                "dz fight club": { platform: "TWITCH", channel: "dz_fightclub" },
+                "wifi is ok": { platform: "TWITCH", channel: "trainer_lake" },
+                "platnite": { platform: "YOUTUBE", channel: "@UCOEsports" }
             };
 
-            // Edit this list to control exactly which events appear in the Weekly Spotlight!
             const WEEKLY_WHITELIST = [
                 "Smash at NSU", "Casual Portal", "Breakpoint Weekly",
                 "The Weekly Contender", "DZ Fight Club", "Shieldpokes",
                 "Platnite", "ECU Tiger Smash Day", "Sooner Dojo", "WiFi is OK"
             ];
             
-            // Map Coordinates for OK Cities (Since Start.gg doesn't give Lat/Lng)
             const OK_CITY_COORDS = {
                 "Oklahoma City": [35.4676, -97.5164], "Tulsa": [36.1540, -95.9928],
                 "Norman": [35.2226, -97.4395], "Edmond": [35.6528, -97.4781],
                 "Lawton": [34.6059, -98.3959], "Stillwater": [36.1156, -97.0584],
                 "Broken Arrow": [36.0365, -95.7836], "Shawnee": [35.3273, -96.9253]
             };
+
+            const SCENE_VENUES = [
+                {
+                    name: "Casual Portal",
+                    searchKey: "Casual Portal",
+                    defaultCity: "Tulsa",
+                    desc: "Local gaming lounge hosting regular Ultimate and Melee weeklies.",
+                    img: "https://placehold.co/600x300/1e293b/6366f1?text=Casual+Portal"
+                },
+                {
+                    name: "DZ Fight Club",
+                    searchKey: "DZ Fight Club",
+                    defaultCity: "Moore",
+                    desc: "Dedicated Fighting Game venue. Home to intense local bracket action for both Smash and traditional FGC.",
+                    img: "https://placehold.co/600x300/1e293b/6366f1?text=DZ+Fight+Club"
+                },
+                {
+                    name: "University of Oklahoma (OU)",
+                    searchKey: "Sooner Dojo",
+                    defaultCity: "Norman",
+                    desc: "Home to Sooner Dojo. Tournaments usually run in the Cross Center. Visitor parking is free after 5PM in most lots.",
+                    img: "https://placehold.co/600x300/1e293b/6366f1?text=OU+Campus"
+                },
+                {
+                    name: "Oklahoma State University (OSU)",
+                    searchKey: "OSU",
+                    defaultCity: "Stillwater",
+                    desc: "Home to the OSU Smash Club. Events are typically held in the Student Union basement or classrooms.",
+                    img: "https://placehold.co/600x300/1e293b/6366f1?text=OSU+Campus"
+                }
+            ];
 
             const state = {
                 activeGameId: 1386,
@@ -644,10 +714,9 @@
                 countdownInterval: null,
                 mapInstance: null,
                 mapMarkers: [],
-                streamPlaylist: [] // Holds the dynamic stream gallery list
+                streamPlaylist: [] 
             };
 
-            // Setup Intersection Observer for scroll reveal animations
             const revealObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if(entry.isIntersecting) {
@@ -662,7 +731,6 @@
                 }, 50);
             };
 
-            // Add the 'isOnline' field to the query to accurately verify live status
             const getGraphQLQuery = (showPast, eventFilter) => `
                 query TournamentsByState($perPage: Int!, $page: Int!, $filter: TournamentPageFilter, $sortBy: String) {
                     tournaments(query: { perPage: $perPage, page: $page, filter: $filter, sortBy: $sortBy }) {
@@ -721,7 +789,12 @@
                 calGrid: document.getElementById('calendar-grid'),
                 calTitle: document.getElementById('cal-month-title'),
                 calPrev: document.getElementById('cal-prev'),
-                calNext: document.getElementById('cal-next')
+                calNext: document.getElementById('cal-next'),
+                
+                btnOpenVenues: document.getElementById('btn-open-venues'),
+                btnCloseVenues: document.getElementById('btn-close-venues'),
+                venueModal: document.getElementById('venue-modal'),
+                venueGrid: document.getElementById('venue-grid')
             };
 
             // ==========================================
@@ -733,6 +806,35 @@
                 toast.textContent = message;
                 els.toastContainer.appendChild(toast);
                 setTimeout(() => toast.remove(), 3000);
+            };
+
+            // Adds click-and-drag scrolling to horizontal carousels for desktop users
+            const makeDraggable = (element) => {
+                let isDown = false;
+                let startX;
+                let scrollLeft;
+
+                element.addEventListener('mousedown', (e) => {
+                    isDown = true;
+                    element.classList.add('cursor-grabbing');
+                    startX = e.pageX - element.offsetLeft;
+                    scrollLeft = element.scrollLeft;
+                });
+                element.addEventListener('mouseleave', () => {
+                    isDown = false;
+                    element.classList.remove('cursor-grabbing');
+                });
+                element.addEventListener('mouseup', () => {
+                    isDown = false;
+                    element.classList.remove('cursor-grabbing');
+                });
+                element.addEventListener('mousemove', (e) => {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    const x = e.pageX - element.offsetLeft;
+                    const walk = (x - startX) * 2; // Scroll speed multiplier
+                    element.scrollLeft = scrollLeft - walk;
+                });
             };
 
             const applyTheme = (theme) => {
@@ -793,6 +895,40 @@
             // ==========================================
             // 4. RENDERING FUNCTIONS (GRID, CALENDAR, MAP)
             // ==========================================
+
+            const renderVenues = () => {
+                els.venueGrid.innerHTML = SCENE_VENUES.map(v => {
+                    const matchedTourney = state.allFetchedTournaments.find(t => 
+                        t.name.toLowerCase().includes(v.searchKey.toLowerCase()) && t.venueAddress
+                    );
+
+                    const finalAddress = matchedTourney ? matchedTourney.venueAddress : "Address TBA (Check Start.gg)";
+                    const finalCity = matchedTourney && matchedTourney.city ? matchedTourney.city : v.defaultCity;
+                    const mapsUrl = matchedTourney ? `https://maps.google.com/?q=${encodeURIComponent(matchedTourney.venueAddress)}` : "#";
+
+                    return `
+                    <div class="bg-black/20 border border-[var(--card-border)] rounded-xl overflow-hidden flex flex-col hover:border-[var(--accent)] transition-colors shadow-sm group">
+                        <div class="h-32 overflow-hidden relative">
+                            <img src="${v.img}" alt="${v.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            <div class="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded text-xs font-bold border border-white/10">
+                                ${finalCity}
+                            </div>
+                        </div>
+                        <div class="p-4 flex flex-col flex-grow">
+                            <h4 class="font-bold text-xl text-[var(--text-main)] mb-1">${v.name}</h4>
+                            <p class="text-xs text-[var(--text-muted)] mb-3 flex items-start gap-1">
+                                <svg class="w-3.5 h-3.5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                                ${finalAddress}
+                            </p>
+                            <p class="text-sm text-[var(--text-main)] mb-4 flex-grow">${v.desc}</p>
+                            <a href="${mapsUrl}" target="_blank" class="w-full text-center bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white py-2 rounded-lg font-bold text-sm transition-colors shadow-md">
+                                Get Directions
+                            </a>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            };
 
             const renderFeaturedTournament = (t) => {
                 if (!t) return els.featured.innerHTML = '';
@@ -858,7 +994,6 @@
                     let cardHighlightClass = 'border-[var(--card-border)] hover:border-[var(--accent)] hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] bg-black/20';
                     let neonEdgeColor = 'from-[var(--accent)] to-purple-500';
 
-                    // Started within the last 14 hours
                     if (timeDiff <= 0 && timeDiff > -50400) { 
                         badgeHtml = `
                             <div class="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-black px-3 py-1.5 rounded-bl-xl rounded-tr-2xl shadow-lg flex items-center gap-2 z-20 uppercase tracking-widest">
@@ -871,7 +1006,6 @@
                         cardHighlightClass = 'border-red-500/60 shadow-[0_0_20px_rgba(239,68,68,0.25)] bg-red-900/20';
                         neonEdgeColor = 'from-red-500 to-orange-500';
                     } 
-                    // Starting within the next 12 hours
                     else if (timeDiff > 0 && timeDiff <= 43200) { 
                         badgeHtml = `<div class="absolute top-0 right-0 bg-yellow-500 text-black text-[10px] font-black px-3 py-1.5 rounded-bl-xl rounded-tr-2xl shadow-lg flex items-center gap-1.5 z-20 uppercase tracking-widest">Starting Soon</div>`;
                         cardHighlightClass = 'border-yellow-500/60 shadow-[0_0_20px_rgba(234,179,8,0.2)] bg-yellow-900/20';
@@ -881,11 +1015,9 @@
                     const isOnline = t.name.toLowerCase().includes('online') || t.name.toLowerCase().includes('wifi');
                     const cityText = isOnline ? '🌐 Online' : (t.city || 'TBA');
 
-                    // Add scroll-reveal with staggered transition delays based on index
                     return `
                     <a href="https://start.gg/${t.slug}" target="_blank" class="scroll-reveal relative snap-start shrink-0 w-72 md:w-80 backdrop-blur-md p-5 rounded-2xl border transition-all flex flex-col gap-3 group overflow-hidden ${cardHighlightClass}" style="transition-delay: ${index * 50}ms">
                         ${badgeHtml}
-                        <!-- Decorative neon edge -->
                         <div class="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b ${neonEdgeColor} opacity-80 group-hover:opacity-100 transition-opacity"></div>
                         
                         <h4 class="font-bold text-lg text-[var(--text-main)] truncate group-hover:text-[var(--accent)] transition-colors pl-2 pr-20" title="${t.name}">${t.name}</h4>
@@ -906,7 +1038,6 @@
                 triggerReveal();
             };
             
-            // --- CALENDAR VIEW ---
             const renderCalendar = () => {
                 const year = state.calendarDate.getFullYear();
                 const month = state.calendarDate.getMonth();
@@ -960,7 +1091,6 @@
                 }
             };
 
-            // --- MAP VIEW ---
             const renderMap = () => {
                 if (!state.mapInstance) {
                     state.mapInstance = L.map('map-container').setView([35.4676, -97.5164], 7); 
@@ -975,7 +1105,7 @@
                 const cityGroups = {};
                 state.tournaments.forEach(t => {
                     const isOnline = t.name.toLowerCase().includes('online') || t.name.toLowerCase().includes('wifi');
-                    if (isOnline) return; // Completely skip online events for the map
+                    if (isOnline) return; 
 
                     const city = t.city || "Oklahoma City";
                     if (!cityGroups[city]) cityGroups[city] = [];
@@ -1012,9 +1142,8 @@
                 });
             };
 
-            // --- GRID VIEW ---
             const renderSkeletonsGrid = () => {
-                els.gridContainer.innerHTML = Array(6).fill(0).map(() => `
+                els.gridContainer.innerHTML = Array(10).fill(0).map(() => `
                     <div class="glass-panel rounded-2xl overflow-hidden h-[450px] flex flex-col">
                         <div class="h-48 skeleton"></div>
                         <div class="p-6 flex-grow flex flex-col gap-4">
@@ -1034,8 +1163,8 @@
                 
                 state.tournaments.forEach((t, index) => {
                     const card = document.createElement('div');
-                    card.className = `card-container scroll-reveal`; // Added scroll-reveal
-                    card.style.transitionDelay = `${(index % 6) * 50}ms`; // Staggered intro
+                    card.className = `card-container scroll-reveal`; 
+                    card.style.transitionDelay = `${(index % 6) * 50}ms`; 
                     card.dataset.id = t.id;
                     
                     const imgUrl = t.images.length > 0 ? t.images[0].url : `https://placehold.co/600x400/1e293b/94a3b8?text=${encodeURIComponent(t.name)}`;
@@ -1159,7 +1288,6 @@
             const filterAndRender = () => {
                 let filtered = state.allFetchedTournaments;
                 
-                // Pull out weeklies
                 if (!state.showPast) {
                     let spotlightWeeklies = [];
                     const seenSeries = new Set();
@@ -1173,7 +1301,6 @@
                         }
                     });
 
-                    // Apply the user's city/search filters to the spotlight too!
                     if (state.activeCity === 'Online') {
                         spotlightWeeklies = spotlightWeeklies.filter(t => t.name.toLowerCase().includes('online') || t.name.toLowerCase().includes('wifi'));
                     } else if (state.activeCity) {
@@ -1186,7 +1313,6 @@
                     renderWeeklies([]);
                 }
 
-                // Main Filters
                 if (state.activeCity === 'Online') {
                     filtered = filtered.filter(t => t.name.toLowerCase().includes('online') || t.name.toLowerCase().includes('wifi'));
                 } else if (state.activeCity) {
@@ -1205,7 +1331,7 @@
                 
                 els.statCounter.textContent = `Showing ${state.tournaments.length} tournament${state.tournaments.length !== 1 ? 's' : ''} ${state.activeCity ? `in ${state.activeCity}` : 'in OK'}.`;
                 
-                switchView(state.viewMode); // Renders correct view based on state
+                switchView(state.viewMode);
             };
 
             const fetchTournaments = async () => {
@@ -1213,7 +1339,7 @@
                 els.statCounter.innerHTML = '<div class="loader-ring"></div>';
 
                 const timestamp = Math.floor(Date.now() / 1000);
-                const LIVE_WINDOW = 14 * 60 * 60; // 14 hour buffer
+                const LIVE_WINDOW = 14 * 60 * 60;
                 
                 let filter = { addrState: "OK" };
                 if (state.activeGameId !== 0) filter.videogameIds = [state.activeGameId];
@@ -1237,6 +1363,7 @@
                     if (!data || data.errors) throw new Error(data.errors?.[0]?.message || 'API Error');
                     
                     state.allFetchedTournaments = data.data.tournaments.nodes;
+                    renderVenues();
                     filterAndRender();
                 } catch (err) {
                     console.error('Fetch error:', err);
@@ -1271,30 +1398,36 @@
                         
                         renderFeaturedTournament(biggestTournament);
                         
-                        // --- DYNAMIC STREAM PLAYLIST BUILDER ---
+                        // --- MULTI-PLATFORM STREAM PLAYLIST BUILDER ---
                         const availableStreamsMap = new Map();
 
-                        // 1. SMART OVERRIDE LOGIC
-                        let smartChannelOverride = null;
-                        for (const [tourneyName, actualChannel] of Object.entries(SMART_STREAM_OVERRIDES)) {
+                        // 1. SMART OVERRIDE LOGIC (Now includes Platform)
+                        let smartOverride = null;
+                        for (const [tourneyName, overrideData] of Object.entries(SMART_STREAM_OVERRIDES)) {
                             if (biggestTournament.name.toLowerCase().includes(tourneyName)) {
-                                smartChannelOverride = actualChannel;
-                                availableStreamsMap.set(actualChannel, { name: actualChannel, isLive: true });
+                                smartOverride = overrideData;
+                                availableStreamsMap.set(overrideData.channel.toLowerCase(), { 
+                                    name: overrideData.channel, 
+                                    platform: overrideData.platform,
+                                    isLive: true 
+                                });
                                 break;
                             }
                         }
 
-                        // Gather all valid Twitch streams from the API response
+                        // Gather all valid Twitch/Youtube streams from the API response
                         upcomingNodes.forEach(t => {
                             if (t.streams) {
                                 t.streams.forEach(s => {
-                                    if (s.streamSource === 'TWITCH' && s.streamName) {
+                                    if ((s.streamSource === 'TWITCH' || s.streamSource === 'YOUTUBE') && s.streamName) {
                                         const sName = s.streamName.toLowerCase();
+                                        
                                         // Ignore the API's channel if we already forced a smart override for it
-                                        if (sName !== smartChannelOverride) {
+                                        if (!smartOverride || sName !== smartOverride.channel.toLowerCase()) {
                                             if (!availableStreamsMap.has(sName) || (s.isOnline && !availableStreamsMap.get(sName).isLive)) {
                                                 availableStreamsMap.set(sName, {
-                                                    name: sName,
+                                                    name: s.streamName, // preserve original casing
+                                                    platform: s.streamSource,
                                                     isLive: s.isOnline === true
                                                 });
                                             }
@@ -1312,38 +1445,36 @@
                         }
 
                         // Build Playlist Priority 2: Add curated fallbacks
-                        FALLBACK_TWITCH_CHANNELS.forEach(name => {
-                            if (!state.streamPlaylist.find(x => x.name === name)) {
-                                // We don't know if fallbacks are actually live via Start.gg, mark as null (yellow dot)
-                                state.streamPlaylist.push({ name: name, isLive: null });
+                        FALLBACK_STREAMS.forEach(fallback => {
+                            if (!state.streamPlaylist.find(x => x.name.toLowerCase() === fallback.name.toLowerCase())) {
+                                state.streamPlaylist.push({ name: fallback.name, platform: fallback.platform, isLive: null });
                             }
                         });
 
                         // Build Playlist Priority 3: Add OFFLINE linked streams to the back of the queue (for VOD access)
                         for (const [name, data] of availableStreamsMap.entries()) {
-                            if (!data.isLive && !state.streamPlaylist.find(x => x.name === name)) {
+                            if (!data.isLive && !state.streamPlaylist.find(x => x.name.toLowerCase() === name.toLowerCase())) {
                                 state.streamPlaylist.push(data);
                             }
                         }
 
-                        // Fallback if literally empty
                         if (state.streamPlaylist.length === 0) {
-                            state.streamPlaylist.push({ name: "tourneylocator", isLive: null });
+                            state.streamPlaylist.push({ name: "tourneylocator", platform: "TWITCH", isLive: null });
                         }
 
-                        // Initialize Twitch Player with the top priority stream
-                        renderTwitchPlayer(state.streamPlaylist[0].name);
+                        // Initialize Player
+                        renderStreamPlayer(state.streamPlaylist[0].name, state.streamPlaylist[0].platform);
                         
                     } else {
                         els.featured.innerHTML = '';
-                        state.streamPlaylist = FALLBACK_TWITCH_CHANNELS.map(name => ({name, isLive: null}));
-                        renderTwitchPlayer(state.streamPlaylist[0].name);
+                        state.streamPlaylist = FALLBACK_STREAMS.map(f => ({name: f.name, platform: f.platform, isLive: null}));
+                        renderStreamPlayer(state.streamPlaylist[0].name, state.streamPlaylist[0].platform);
                     }
                 } catch (err) {
                     console.error("Featured fetch error:", err);
                     els.featured.innerHTML = '';
-                    state.streamPlaylist = FALLBACK_TWITCH_CHANNELS.map(name => ({name, isLive: null}));
-                    renderTwitchPlayer(state.streamPlaylist[0].name);
+                    state.streamPlaylist = FALLBACK_STREAMS.map(f => ({name: f.name, platform: f.platform, isLive: null}));
+                    renderStreamPlayer(state.streamPlaylist[0].name, state.streamPlaylist[0].platform);
                 }
             };
 
@@ -1352,28 +1483,23 @@
             // ==========================================
             
             // Expose function globally for the onclick UI handlers in the Carousel
-            window.switchStream = (channelName) => {
-                renderTwitchPlayer(channelName);
+            window.switchStream = (channelName, platform) => {
+                renderStreamPlayer(channelName, platform);
             };
 
-            const renderTwitchPlayer = (activeChannel) => {
+            const renderStreamPlayer = (activeChannel, activePlatform) => {
                 const container = document.getElementById('twitch-embed-container');
                 const titleEl = document.getElementById('twitch-stream-title');
                 const linkEl = document.getElementById('twitch-link-out');
                 const switcherEl = document.getElementById('stream-switcher');
                 
-                // Find the status of the active channel
                 const activeStreamObj = state.streamPlaylist.find(x => x.name === activeChannel);
                 const isConfirmedLive = activeStreamObj && activeStreamObj.isLive === true;
 
-                // Update the section header
                 if(titleEl) {
                     titleEl.innerHTML = isConfirmedLive 
                         ? `<span class="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>Live Stream: ${activeChannel}`
                         : `<span class="w-3 h-3 rounded-full bg-gray-500"></span>Featured Stream: ${activeChannel}`;
-                }
-                if(linkEl) {
-                    linkEl.href = `https://twitch.tv/${activeChannel}`;
                 }
 
                 // Render the Stream Switcher Carousel UI
@@ -1384,33 +1510,72 @@
                             ? "bg-[var(--accent)] text-white shadow-[0_0_10px_rgba(99,102,241,0.4)] border border-transparent"
                             : "bg-black/30 text-[var(--text-muted)] hover:bg-black/50 hover:text-[var(--text-main)] border border-[var(--card-border)]";
 
-                        // Red = Confirmed Live, Yellow = Unknown/Fallback, Gray = Confirmed Offline
                         let statusIcon = `<span class="w-2 h-2 rounded-full bg-yellow-500"></span>`; 
-                        if (s.isLive === true) {
-                            statusIcon = `<span class="w-2 h-2 rounded-full ${isActive ? 'bg-white animate-pulse' : 'bg-red-500 animate-pulse'}"></span>`;
-                        } else if (s.isLive === false) {
-                            statusIcon = `<span class="w-2 h-2 rounded-full bg-gray-600"></span>`;
-                        }
+                        if (s.isLive === true) statusIcon = `<span class="w-2 h-2 rounded-full ${isActive ? 'bg-white animate-pulse' : 'bg-red-500 animate-pulse'}"></span>`;
+                        else if (s.isLive === false) statusIcon = `<span class="w-2 h-2 rounded-full bg-gray-600"></span>`;
+                        
+                        // Platform specific label icon
+                        let platformIcon = s.platform === 'YOUTUBE' 
+                            ? `<svg class="w-3 h-3 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`
+                            : `<svg class="w-3 h-3 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg>`;
 
-                        return `<button class="px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${baseClasses}" onclick="window.switchStream('${s.name}')">
-                            ${statusIcon} ${s.name}
+                        return `<button class="px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${baseClasses}" onclick="window.switchStream('${s.name}', '${s.platform}')">
+                            ${statusIcon} ${platformIcon} ${s.name}
                         </button>`;
                     }).join('');
                 }
                 
-                let currentHost = window.location.hostname;
-                if (!currentHost || currentHost === "") currentHost = "localhost";
-                const productionDomain = "oklahomasmash.com";
+                // RENDER LOGIC BASED ON PLATFORM
+                if (activePlatform === 'YOUTUBE') {
+                    // YouTube uses handles, which can't be easily embedded into iframes without an API video ID.
+                    // Instead, we render a beautiful "Watch on YouTube" placeholder card!
+                    
+                    // FIX: Strip out any blank spaces from Display Names (e.g., "UCO Esports" becomes "UCOEsports")
+                    let safeChannel = activeChannel.replace(/\s+/g, '');
+                    let ytUrl = `https://youtube.com/${safeChannel.startsWith('@') ? safeChannel : '@'+safeChannel}/live`;
+                    
+                    if(linkEl) {
+                        linkEl.href = ytUrl;
+                        linkEl.innerHTML = `Watch on YouTube <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>`;
+                    }
+                    
+                    container.innerHTML = `
+                        <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-900/40 to-black text-center p-8 border-y border-[var(--card-border)] relative overflow-hidden">
+                            <!-- Background effect -->
+                            <div class="absolute inset-0 bg-black/60 z-0"></div>
+                            
+                            <div class="relative z-10 flex flex-col items-center">
+                                <svg class="w-20 h-20 text-red-500 mb-4 drop-shadow-[0_0_15px_rgba(239,68,68,0.6)] hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                                <h3 class="text-3xl md:text-4xl font-anton text-white mb-2 tracking-wide uppercase">Streaming on YouTube</h3>
+                                <p class="text-[var(--text-muted)] mb-8 text-lg">This event is currently being broadcasted on the ${activeChannel} channel.</p>
+                                <a href="${ytUrl}" target="_blank" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full shadow-[0_0_25px_rgba(239,68,68,0.5)] transition-all hover:scale-105 flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                    Open Live Stream
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Standard Twitch Embed
+                    let currentHost = window.location.hostname;
+                    if (!currentHost || currentHost === "") currentHost = "localhost";
+                    const productionDomain = "destronfgc.github.io";
 
-                container.innerHTML = `
-                    <iframe
-                        src="https://player.twitch.tv/?channel=${activeChannel}&parent=${currentHost}&parent=${productionDomain}&parent=localhost&parent=aistudio.google.com&autoplay=true&muted=false"
-                        height="100%"
-                        width="100%"
-                        allowfullscreen="true"
-                        style="border: none;">
-                    </iframe>
-                `;
+                    if(linkEl) {
+                        linkEl.href = `https://twitch.tv/${activeChannel}`;
+                        linkEl.innerHTML = `Watch on Twitch <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>`;
+                    }
+
+                    container.innerHTML = `
+                        <iframe
+                            src="https://player.twitch.tv/?channel=${activeChannel}&parent=${currentHost}&parent=${productionDomain}&parent=localhost&parent=aistudio.google.com&autoplay=true&muted=false"
+                            height="100%"
+                            width="100%"
+                            allowfullscreen="true"
+                            style="border: none;">
+                        </iframe>
+                    `;
+                }
             };
 
             const updateActiveToggleBtn = () => {
@@ -1425,11 +1590,15 @@
 
             const initializePage = () => {
                 applyTheme(state.theme);
+                renderVenues();
                 
-                // Add base elements to observer
+                // Initialize Draggable Carousels
+                makeDraggable(document.getElementById('stream-switcher'));
+                makeDraggable(document.getElementById('weeklies-list'));
+                makeDraggable(document.getElementById('controls-scroll-area'));
+                
                 document.querySelectorAll('.scroll-reveal').forEach(el => revealObserver.observe(el));
 
-                // Header Parallax effect on scroll
                 window.addEventListener('scroll', () => {
                     const scrolled = window.scrollY;
                     const headerContent = document.querySelector('#main-header .relative.z-10');
@@ -1438,16 +1607,13 @@
                     }
                 });
                 
-                // View Toggles
                 document.getElementById('view-grid').addEventListener('click', () => switchView('grid'));
                 document.getElementById('view-calendar').addEventListener('click', () => switchView('calendar'));
                 document.getElementById('view-map').addEventListener('click', () => switchView('map'));
 
-                // Calendar Controls
                 els.calPrev.addEventListener('click', () => { state.calendarDate.setMonth(state.calendarDate.getMonth() - 1); renderCalendar(); });
                 els.calNext.addEventListener('click', () => { state.calendarDate.setMonth(state.calendarDate.getMonth() + 1); renderCalendar(); });
 
-                // Filters
                 const triggerLocalRender = () => {
                     state.searchTerm = els.searchInput.value;
                     state.activeCity = els.citySelect.value;
@@ -1471,6 +1637,12 @@
                     if(state.showPast) {
                         state.showPast = false; updateActiveToggleBtn(); fetchTournaments();
                     } else triggerLocalRender();
+                });
+
+                els.btnOpenVenues.addEventListener('click', () => els.venueModal.classList.remove('hidden'));
+                els.btnCloseVenues.addEventListener('click', () => els.venueModal.classList.add('hidden'));
+                els.venueModal.addEventListener('click', (e) => {
+                    if (e.target === els.venueModal) els.venueModal.classList.add('hidden');
                 });
 
                 els.themeToggle.addEventListener('click', () => {
@@ -1498,7 +1670,6 @@
                     }
                 });
 
-                // Grid Card Actions
                 els.gridContainer.addEventListener('click', (e) => {
                     const shareBtn = e.target.closest('.share-btn');
                     const calBtn = e.target.closest('.calendar-btn');
@@ -1530,7 +1701,6 @@
 
             initializePage();
             
-            // Register PWA Service Worker
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                     navigator.serviceWorker.register('./sw.js').then(registration => {
