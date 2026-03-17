@@ -396,14 +396,36 @@
 <body class="antialiased selection:bg-indigo-500 selection:text-white">
 
     <!-- ULTRA WIDE CONTAINER FIX: Replaced strict max-w-7xl constraint with fluid ultrawide parameters -->
-    <div class="mx-auto px-4 md:px-8 py-8 w-full max-w-[1600px] 2xl:max-w-[2200px]">
+    <div class="mx-auto px-4 md:px-8 py-8 pb-24 md:pb-8 w-full max-w-[1600px] 2xl:max-w-[2200px]">
         
         <!-- App Top Navigation Bar -->
-        <nav class="sticky top-4 z-[60] glass-panel rounded-full p-2 mb-8 flex justify-between gap-1 md:gap-2 w-full max-w-2xl mx-auto shadow-[0_10px_30px_rgba(0,0,0,0.3)] border border-[var(--accent)]/30 backdrop-blur-xl bg-black/60">
+        <nav class="hidden md:flex sticky top-4 z-[60] glass-panel rounded-full p-2 mb-8 justify-between gap-1 md:gap-2 w-full max-w-2xl mx-auto shadow-[0_10px_30px_rgba(0,0,0,0.3)] border border-[var(--accent)]/30 backdrop-blur-xl bg-black/60">
             <button onclick="window.switchPage('home')" id="nav-home" class="nav-btn active flex-1 py-2.5 rounded-full text-sm md:text-base font-bold transition-all bg-[var(--accent)] text-white shadow-md">Dashboard</button>
             <button onclick="window.switchPage('vods')" id="nav-vods" class="nav-btn flex-1 py-2.5 rounded-full text-sm md:text-base font-bold transition-all text-[var(--text-muted)] hover:text-white hover:bg-white/10">VODs</button>
             <button onclick="window.switchPage('rules')" id="nav-rules" class="nav-btn flex-1 py-2.5 rounded-full text-sm md:text-base font-bold transition-all text-[var(--text-muted)] hover:text-white hover:bg-white/10">Rules</button>
             <button onclick="window.switchPage('resources')" id="nav-resources" class="nav-btn flex-1 py-2.5 rounded-full text-sm md:text-base font-bold transition-all text-[var(--text-muted)] hover:text-white hover:bg-white/10">Resources</button>
+        </nav>
+
+        <!-- Mobile Bottom Navigation -->
+        <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 w-full z-[100] bg-[#0f172a]/90 backdrop-blur-xl border-t border-[var(--card-border)] pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+            <div class="flex justify-around items-center p-2">
+                <button onclick="window.switchPage('home')" id="mob-nav-home" class="mobile-nav-btn text-[var(--accent)] flex flex-col items-center p-2 transition-colors">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    <span class="text-[10px] font-bold">Home</span>
+                </button>
+                <button onclick="window.switchPage('vods')" id="mob-nav-vods" class="mobile-nav-btn text-[var(--text-muted)] hover:text-white flex flex-col items-center p-2 transition-colors">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    <span class="text-[10px] font-bold">VODs</span>
+                </button>
+                <button onclick="window.switchPage('rules')" id="mob-nav-rules" class="mobile-nav-btn text-[var(--text-muted)] hover:text-white flex flex-col items-center p-2 transition-colors">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    <span class="text-[10px] font-bold">Rules</span>
+                </button>
+                <button onclick="window.switchPage('resources')" id="mob-nav-resources" class="mobile-nav-btn text-[var(--text-muted)] hover:text-white flex flex-col items-center p-2 transition-colors">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                    <span class="text-[10px] font-bold">More</span>
+                </button>
+            </div>
         </nav>
 
         <!-- ========================================== -->
@@ -800,13 +822,13 @@
     </div>
 
     <!-- FLOATING ACTION BUTTON (DISCORD) -->
-    <a href="https://discordapp.com/invite/ycZbHSz" target="_blank" title="Join the OK Smash Discord" class="fixed bottom-6 right-6 p-4 rounded-full bg-[#5865F2] hover:bg-[#4752C4] text-white z-[90] shadow-[0_0_20px_rgba(88,101,242,0.5)] transition-transform hover:scale-110 flex items-center justify-center group">
+    <a href="https://discordapp.com/invite/ycZbHSz" target="_blank" title="Join the OK Smash Discord" class="fixed bottom-20 md:bottom-6 right-6 p-4 rounded-full bg-[#5865F2] hover:bg-[#4752C4] text-white z-[90] shadow-[0_0_20px_rgba(88,101,242,0.5)] transition-transform hover:scale-110 flex items-center justify-center group">
         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>
         <span class="absolute right-full mr-4 bg-black/80 px-3 py-1.5 rounded-lg text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap backdrop-blur-md border border-white/10">Join the Discord!</span>
     </a>
 
     <!-- Moved Back-to-top button up slightly so it doesn't hit the Discord button -->
-    <button id="back-to-top-btn" class="p-4 rounded-full btn-primary text-white z-[90] fixed right-6 bottom-24 hidden shadow-lg">
+    <button id="back-to-top-btn" class="p-4 rounded-full btn-primary text-white z-[90] fixed right-6 bottom-[140px] md:bottom-24 hidden shadow-lg">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
     </button>
 
@@ -1034,11 +1056,15 @@
                         }
                     });
                 });
+            } else {
+                console.log('Firebase config missing. Running Setup Tracker in Local Mock Mode.');
+                currentUser = { uid: 'local-test-user' }; 
+                // Will use state.setups locally for demo purposes so you can see the UI working!
             }
 
             // App Routing Logic
             window.switchPage = (pageId) => {
-                // Update Nav Buttons
+                // Update Desktop Nav Buttons
                 document.querySelectorAll('.nav-btn').forEach(btn => {
                     btn.classList.remove('bg-[var(--accent)]', 'text-white', 'shadow-md', 'active');
                     btn.classList.add('text-[var(--text-muted)]');
@@ -1047,6 +1073,17 @@
                 if(activeBtn) {
                     activeBtn.classList.remove('text-[var(--text-muted)]');
                     activeBtn.classList.add('bg-[var(--accent)]', 'text-white', 'shadow-md', 'active');
+                }
+
+                // Update Mobile Nav Buttons
+                document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+                    btn.classList.remove('text-[var(--accent)]');
+                    btn.classList.add('text-[var(--text-muted)]');
+                });
+                const activeMobBtn = document.getElementById(`mob-nav-${pageId}`);
+                if(activeMobBtn) {
+                    activeMobBtn.classList.remove('text-[var(--text-muted)]');
+                    activeMobBtn.classList.add('text-[var(--accent)]');
                 }
 
                 // Hide all pages, show target page
@@ -1307,32 +1344,54 @@
                 localStorage.setItem('smash_gamer_tag', tagInput);
 
                 const docId = `${tourneyId}_${currentUser.uid}`;
-                const setupRef = doc(db, 'artifacts', appId, 'public', 'data', 'setups', docId);
 
-                try {
-                    await setDoc(setupRef, {
+                if (db) {
+                    const setupRef = doc(db, 'artifacts', appId, 'public', 'data', 'setups', docId);
+                    try {
+                        await setDoc(setupRef, {
+                            tournamentId: tourneyId,
+                            userId: currentUser.uid,
+                            tag: tagInput,
+                            type: typeInput,
+                            timestamp: Date.now()
+                        });
+                        showToast("Setup committed!");
+                    } catch(err) {
+                        console.error(err);
+                        showToast("Failed to save setup.");
+                    }
+                } else {
+                    // Local Mock Mode
+                    state.setups.push({
+                        id: docId,
                         tournamentId: tourneyId,
                         userId: currentUser.uid,
                         tag: tagInput,
                         type: typeInput,
                         timestamp: Date.now()
                     });
-                    showToast("Setup committed!");
-                } catch(err) {
-                    console.error(err);
-                    showToast("Failed to save setup.");
+                    showToast("Setup saved locally (Preview mode).");
+                    renderSetupsSection(tourneyId);
                 }
             };
 
             window.removeSetup = async (tourneyId) => {
                 if (!currentUser) return;
                 const docId = `${tourneyId}_${currentUser.uid}`;
-                const setupRef = doc(db, 'artifacts', appId, 'public', 'data', 'setups', docId);
-                try {
-                    await deleteDoc(setupRef);
-                    showToast("Setup removed.");
-                } catch(err) {
-                    console.error(err);
+                
+                if (db) {
+                    const setupRef = doc(db, 'artifacts', appId, 'public', 'data', 'setups', docId);
+                    try {
+                        await deleteDoc(setupRef);
+                        showToast("Setup removed.");
+                    } catch(err) {
+                        console.error(err);
+                    }
+                } else {
+                    // Local Mock Mode
+                    state.setups = state.setups.filter(s => s.id !== docId);
+                    showToast("Setup removed (Preview mode).");
+                    renderSetupsSection(tourneyId);
                 }
             };
 
@@ -1653,7 +1712,13 @@
                             <div class="w-full flex-grow overflow-y-auto pr-2 custom-scrollbar">
                                 ${top8List || '<p class="text-[var(--text-muted)] text-sm text-center mt-4">No results available yet.</p>'}
                             </div>
-                            <a href="https://start.gg/${t.slug}" target="_blank" class="mt-4 btn-primary px-6 py-2 rounded-lg font-bold w-full text-center shadow-lg text-sm">View Full Bracket</a>
+                            <div class="mt-4 w-full flex flex-col gap-2">
+                                <a href="https://start.gg/${t.slug}" target="_blank" class="btn-primary px-6 py-2 rounded-lg font-bold w-full text-center shadow-lg text-sm">View Full Bracket</a>
+                                <button onclick="window.openEventModal('${t.id}')" class="bg-[#c084fc]/20 hover:bg-[#c084fc]/40 text-[#c084fc] border border-[#c084fc]/50 py-2 rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    View Full Details
+                                </button>
+                            </div>
                         `;
                     } else {
                         const eventsList = t.events && t.events.length > 0 
@@ -1681,7 +1746,13 @@
                             </div>
                             ${eventsList}
                             ${addressHtml}
-                            <a href="https://start.gg/${t.slug}" target="_blank" class="mt-auto btn-primary px-6 py-3 rounded-lg font-bold w-full text-center shadow-lg">View on Start.gg</a>
+                            <div class="mt-auto w-full flex flex-col gap-2">
+                                <a href="https://start.gg/${t.slug}" target="_blank" class="btn-primary py-2.5 rounded-lg font-bold w-full text-center shadow-lg">View on Start.gg</a>
+                                <button onclick="window.openEventModal('${t.id}')" class="bg-[#c084fc]/20 hover:bg-[#c084fc]/40 text-[#c084fc] border border-[#c084fc]/50 py-2.5 rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                    Open Setup Tracker
+                                </button>
+                            </div>
                         `;
                     }
 
