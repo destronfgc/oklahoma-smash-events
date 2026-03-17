@@ -816,7 +816,11 @@
     <!-- Leaflet Map Script -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
         document.addEventListener('DOMContentLoaded', () => {
             // ==========================================
             // 1. STATE & CONSTANTS
@@ -898,7 +902,9 @@
                 countdownInterval: null,
                 mapInstance: null,
                 mapMarkers: [],
-                streamPlaylist: [] 
+                streamPlaylist: [],
+                setups: [], // Added for Firebase
+                currentModalTournamentId: null // Added for Firebase
             };
 
             const revealObserver = new IntersectionObserver((entries) => {
@@ -985,6 +991,51 @@
             // 3. UTILITY FUNCTIONS
             // ==========================================
             
+            // --- FIREBASE INITIALIZATION & AUTH ---
+            let db = null;
+            let auth = null;
+            let appId = 'default-app-id';
+            let currentUser = null;
+
+            // Fallback check to safely run on GitHub Pages without crashing
+            if (typeof __firebase_config !== 'undefined' && typeof __app_id !== 'undefined') {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                appId = __app_id;
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                const initAuth = async () => {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                };
+
+                initAuth().then(() => {
+                    onAuthStateChanged(auth, (user) => {
+                        currentUser = user;
+                        if (user) {
+                            // Listen to all setups in the public collection
+                            const setupsRef = collection(db, 'artifacts', appId, 'public', 'data', 'setups');
+                            onSnapshot(setupsRef, (snapshot) => {
+                                state.setups = [];
+                                snapshot.forEach(doc => {
+                                    state.setups.push({ id: doc.id, ...doc.data() });
+                                });
+                                // Re-render tracker if modal is currently open
+                                if (state.currentModalTournamentId) {
+                                    renderSetupsSection(state.currentModalTournamentId);
+                                }
+                            }, (error) => {
+                                console.error("Firestore error:", error);
+                            });
+                        }
+                    });
+                });
+            }
+
             // App Routing Logic
             window.switchPage = (pageId) => {
                 // Update Nav Buttons
@@ -1101,9 +1152,13 @@
                 triggerReveal();
             };
 
+            window.clearModalId = () => { state.currentModalTournamentId = null; };
+
             window.openEventModal = (id) => {
                 const t = state.tournaments.find(x => x.id === id.toString() || parseInt(x.id, 10) === id);
                 if (!t) return;
+                
+                state.currentModalTournamentId = t.id;
                 
                 const modal = document.getElementById('event-modal');
                 const content = document.getElementById('event-modal-content');
@@ -1122,7 +1177,7 @@
                 content.innerHTML = `
                     <div class="relative h-48 sm:h-64 w-full shrink-0">
                         <img src="${imgUrl}" alt="${t.name}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/800x400/1e293b/94a3b8?text=Image+Not+Found';">
-                        <button type="button" onclick="document.getElementById('event-modal').classList.add('hidden')" class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-colors z-10 border border-white/20">
+                        <button type="button" onclick="document.getElementById('event-modal').classList.add('hidden'); window.clearModalId();" class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-colors z-10 border border-white/20">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
                         <div class="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg text-sm font-bold border border-white/20 shadow-lg">
@@ -1146,6 +1201,9 @@
                             ${eventsList}
                         </div>` : ''}
 
+                        <!-- FIREBASE SETUP TRACKER INJECTION POINT -->
+                        <div id="setup-tracker-section" class="mb-6"></div>
+
                         <div class="mt-auto flex flex-col sm:flex-row gap-3 pt-4">
                             ${regOpen && !state.showPast
                                 ? `<a href="https://start.gg/${t.slug}/register" target="_blank" class="flex-1 btn-primary py-3 rounded-lg font-bold text-center shadow-lg text-lg hover:scale-[1.02] transition-transform">Register Now</a>`
@@ -1157,6 +1215,125 @@
                 `;
                 
                 modal.classList.remove('hidden');
+                renderSetupsSection(t.id);
+            };
+
+            // --- FIREBASE SETUP TRACKER LOGIC ---
+            window.renderSetupsSection = (tourneyId) => {
+                const container = document.getElementById('setup-tracker-section');
+                if (!container) return; 
+
+                // Hide completely if Firebase isn't active
+                if (!currentUser) {
+                    container.innerHTML = '';
+                    return;
+                }
+
+                const tourneySetups = state.setups.filter(s => s.tournamentId === tourneyId);
+                
+                let fullCount = 0, monitorCount = 0, switchCount = 0;
+                const userSetup = tourneySetups.find(s => s.userId === currentUser.uid);
+                const providers = [];
+
+                tourneySetups.forEach(s => {
+                    if (s.type === 'Full Setup') fullCount++;
+                    else if (s.type === 'Monitor') monitorCount++;
+                    else if (s.type === 'Switch') switchCount++;
+                    
+                    providers.push(`<span class="inline-block bg-black/40 px-2 py-1 rounded text-xs border border-[var(--card-border)] text-[var(--text-main)] shadow-sm">${s.tag} (${s.type})</span>`);
+                });
+
+                const savedTag = localStorage.getItem('smash_gamer_tag') || '';
+
+                let actionHtml = '';
+                if (userSetup) {
+                    actionHtml = `
+                        <div class="flex items-center justify-between bg-[var(--accent)]/10 p-3 rounded-lg border border-[var(--accent)]/30 mt-4 shadow-inner">
+                            <p class="text-sm text-[var(--text-main)]">You are bringing a <strong class="text-[var(--accent)]">${userSetup.type}</strong>!</p>
+                            <button onclick="window.removeSetup('${tourneyId}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded shadow transition-colors">Cancel</button>
+                        </div>
+                    `;
+                } else {
+                    actionHtml = `
+                        <div class="mt-4 flex flex-col gap-2 p-3 bg-black/20 rounded-lg border border-[var(--card-border)] shadow-inner">
+                            <p class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide">Volunteer a Setup</p>
+                            <div class="flex gap-2">
+                                <input type="text" id="setup-tag" placeholder="Your Tag" value="${savedTag}" class="flex-1 bg-black/40 border border-[var(--card-border)] rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-[var(--accent)]">
+                                <select id="setup-type" class="flex-1 bg-black/40 border border-[var(--card-border)] rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-[var(--accent)]">
+                                    <option value="Full Setup">Full Setup</option>
+                                    <option value="Monitor">Monitor Only</option>
+                                    <option value="Switch">Switch Only</option>
+                                </select>
+                            </div>
+                            <button onclick="window.addSetup('${tourneyId}')" class="w-full mt-1 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-bold py-2 rounded shadow transition-colors text-sm uppercase tracking-wide">Commit Setup</button>
+                        </div>
+                    `;
+                }
+
+                container.innerHTML = `
+                    <div class="bg-black/30 border border-[#c084fc]/40 p-5 rounded-2xl shadow-[0_0_20px_rgba(192,132,252,0.1)]">
+                        <h4 class="font-bold text-white uppercase flex items-center gap-2 mb-4 tracking-widest text-sm drop-shadow-md">
+                            <svg class="w-5 h-5 text-[#c084fc]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                            Setup Tracker
+                        </h4>
+                        
+                        <div class="flex gap-3 mb-4">
+                            <div class="flex-1 bg-black/40 rounded-xl p-3 text-center border border-white/5 shadow-inner">
+                                <span class="block text-2xl font-black text-[#c084fc] drop-shadow-sm">${fullCount}</span>
+                                <span class="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">Full</span>
+                            </div>
+                            <div class="flex-1 bg-black/40 rounded-xl p-3 text-center border border-white/5 shadow-inner">
+                                <span class="block text-2xl font-black text-blue-400 drop-shadow-sm">${monitorCount}</span>
+                                <span class="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">Monitor</span>
+                            </div>
+                            <div class="flex-1 bg-black/40 rounded-xl p-3 text-center border border-white/5 shadow-inner">
+                                <span class="block text-2xl font-black text-red-400 drop-shadow-sm">${switchCount}</span>
+                                <span class="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">Switch</span>
+                            </div>
+                        </div>
+                        
+                        ${providers.length > 0 ? `<div class="flex flex-wrap gap-2 mb-2">${providers.join('')}</div>` : `<p class="text-xs text-[var(--text-muted)] italic mb-2">No setups volunteered yet. Be the first!</p>`}
+                        ${actionHtml}
+                    </div>
+                `;
+            };
+
+            window.addSetup = async (tourneyId) => {
+                if (!currentUser) return showToast("Database disconnected.");
+                const tagInput = document.getElementById('setup-tag').value.trim();
+                const typeInput = document.getElementById('setup-type').value;
+                
+                if (!tagInput) return showToast("Please enter your tag!");
+                localStorage.setItem('smash_gamer_tag', tagInput);
+
+                const docId = `${tourneyId}_${currentUser.uid}`;
+                const setupRef = doc(db, 'artifacts', appId, 'public', 'data', 'setups', docId);
+
+                try {
+                    await setDoc(setupRef, {
+                        tournamentId: tourneyId,
+                        userId: currentUser.uid,
+                        tag: tagInput,
+                        type: typeInput,
+                        timestamp: Date.now()
+                    });
+                    showToast("Setup committed!");
+                } catch(err) {
+                    console.error(err);
+                    showToast("Failed to save setup.");
+                }
+            };
+
+            window.removeSetup = async (tourneyId) => {
+                if (!currentUser) return;
+                const docId = `${tourneyId}_${currentUser.uid}`;
+                const setupRef = doc(db, 'artifacts', appId, 'public', 'data', 'setups', docId);
+                try {
+                    await deleteDoc(setupRef);
+                    showToast("Setup removed.");
+                } catch(err) {
+                    console.error(err);
+                }
             };
 
             // ==========================================
@@ -1207,36 +1384,37 @@
 
                 els.featured.innerHTML = `
                     <div class="glass-panel rounded-2xl overflow-hidden border border-[var(--accent)] shadow-[0_0_30px_rgba(99,102,241,0.2)] flex flex-col h-full relative group">
-                        <div class="h-48 md:h-56 w-full relative shrink-0">
-                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent z-10"></div>
+                        <!-- Clean Image Wrapper -->
+                        <div class="h-48 md:h-64 w-full relative shrink-0 border-b border-[var(--card-border)]">
                             <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="${imgUrl}" alt="${t.name}">
                             <div class="absolute top-4 left-4 z-20">
                                 <div class="inline-block px-3 py-1 rounded-full bg-[var(--accent)] text-white text-xs font-bold uppercase tracking-wider shadow-md">★ Featured Event</div>
                             </div>
                         </div>
                         
-                        <div class="p-6 md:p-8 flex flex-col flex-grow relative z-20 -mt-16 sm:-mt-20">
-                            <h2 class="text-3xl md:text-5xl font-anton text-white mb-4 leading-tight drop-shadow-md">${t.name}</h2>
-                            <p class="text-md text-gray-300 mb-2 flex items-center gap-2 font-medium">
+                        <!-- Clean Content Area (No Overlap!) -->
+                        <div class="p-6 md:p-8 flex flex-col flex-grow relative z-20 bg-[var(--card-bg)]">
+                            <h2 class="text-3xl md:text-4xl xl:text-5xl font-anton text-[var(--text-main)] mb-4 leading-tight drop-shadow-sm">${t.name}</h2>
+                            <p class="text-md text-[var(--text-muted)] mb-2 flex items-center gap-2 font-medium">
                                 <svg class="w-5 h-5 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 ${dateStr}
                             </p>
-                            <p class="text-md text-gray-300 mb-6 flex items-center gap-2 font-medium">
+                            <p class="text-md text-[var(--text-muted)] mb-6 flex items-center gap-2 font-medium">
                                 <svg class="w-5 h-5 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
                                 ${t.city} ${t.venueAddress ? `• ${t.venueAddress}` : ''}
                             </p>
                             
                             <div class="hidden sm:block mb-6">
-                                <h4 class="font-bold text-white mb-2 text-sm uppercase tracking-widest opacity-80">Events</h4>
-                                <ul class="list-disc list-inside text-gray-300 text-sm">${eventsList}</ul>
+                                <h4 class="font-bold text-[var(--text-main)] mb-2 text-sm uppercase tracking-widest opacity-80">Events</h4>
+                                <ul class="list-disc list-inside text-[var(--text-muted)] text-sm">${eventsList}</ul>
                             </div>
 
                             <div class="flex flex-col sm:flex-row gap-4 items-center mt-auto pt-4 border-t border-[var(--card-border)]">
                                 ${regOpen 
                                     ? `<a href="https://start.gg/${t.slug}/register" target="_blank" class="w-full sm:w-auto text-center btn-primary px-8 py-3 rounded-lg font-bold text-lg flex-1 shadow-lg hover:scale-[1.02]">Register Now</a>`
-                                    : `<a href="https://start.gg/${t.slug}" target="_blank" class="w-full sm:w-auto text-center bg-black/40 hover:bg-black/60 text-white border border-[var(--card-border)] px-8 py-3 rounded-lg font-bold text-lg transition-colors flex-1 hover:scale-[1.02]">View Details</a>`
+                                    : `<a href="https://start.gg/${t.slug}" target="_blank" class="w-full sm:w-auto text-center bg-black/20 hover:bg-black/40 text-[var(--text-main)] border border-[var(--card-border)] px-8 py-3 rounded-lg font-bold text-lg transition-colors flex-1 hover:scale-[1.02]">View Details</a>`
                                 }
-                                <div id="countdown-timer" class="text-lg font-bold text-gradient text-center w-full sm:w-auto shrink-0 bg-black/40 py-2 px-4 rounded-lg border border-[var(--card-border)] backdrop-blur-sm"></div>
+                                <div id="countdown-timer" class="text-lg font-bold text-gradient text-center w-full sm:w-auto shrink-0 bg-black/20 py-2 px-4 rounded-lg border border-[var(--card-border)] backdrop-blur-sm"></div>
                             </div>
                         </div>
                     </div>
@@ -1965,7 +2143,10 @@
                 
                 const eventModal = document.getElementById('event-modal');
                 eventModal.addEventListener('click', (e) => {
-                    if (e.target === eventModal) eventModal.classList.add('hidden');
+                    if (e.target === eventModal) {
+                        eventModal.classList.add('hidden');
+                        window.clearModalId();
+                    }
                 });
 
                 els.themeToggle.addEventListener('click', () => {
