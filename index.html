@@ -1195,10 +1195,12 @@
             window.clearModalId = () => { state.currentModalTournamentId = null; };
 
             window.openEventModal = (id) => {
-                const t = state.tournaments.find(x => x.id === id.toString() || parseInt(x.id, 10) === id);
+                // FIX: Force IDs to Strings so Javascript strict equality doesn't fail silently
+                const targetId = String(id);
+                const t = state.tournaments.find(x => String(x.id) === targetId);
                 if (!t) return;
                 
-                state.currentModalTournamentId = t.id;
+                state.currentModalTournamentId = targetId;
                 
                 const modal = document.getElementById('event-modal');
                 const content = document.getElementById('event-modal-content');
@@ -1255,11 +1257,12 @@
                 `;
                 
                 modal.classList.remove('hidden');
-                renderSetupsSection(t.id);
+                renderSetupsSection(targetId);
             };
 
             // --- FIREBASE SETUP TRACKER LOGIC ---
             window.renderSetupsSection = (tourneyId) => {
+                const targetId = String(tourneyId);
                 const container = document.getElementById('setup-tracker-section');
                 if (!container) return; 
 
@@ -1269,7 +1272,7 @@
                     return;
                 }
 
-                const tourneySetups = state.setups.filter(s => s.tournamentId === tourneyId);
+                const tourneySetups = state.setups.filter(s => String(s.tournamentId) === targetId);
                 
                 let fullCount = 0, monitorCount = 0, switchCount = 0;
                 const userSetup = tourneySetups.find(s => s.userId === currentUser.uid);
@@ -1290,7 +1293,7 @@
                     actionHtml = `
                         <div class="flex items-center justify-between bg-[var(--accent)]/10 p-3 rounded-lg border border-[var(--accent)]/30 mt-4 shadow-inner">
                             <p class="text-sm text-[var(--text-main)]">You are bringing a <strong class="text-[var(--accent)]">${userSetup.type}</strong>!</p>
-                            <button onclick="window.removeSetup('${tourneyId}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded shadow transition-colors">Cancel</button>
+                            <button onclick="window.removeSetup('${targetId}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded shadow transition-colors">Cancel</button>
                         </div>
                     `;
                 } else {
@@ -1305,7 +1308,7 @@
                                     <option value="Switch">Switch Only</option>
                                 </select>
                             </div>
-                            <button id="commit-btn-${tourneyId}" onclick="window.addSetup('${tourneyId}')" class="w-full mt-1 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-bold py-2 rounded shadow transition-colors text-sm uppercase tracking-wide">Commit Setup</button>
+                            <button id="commit-btn-${targetId}" onclick="window.addSetup('${targetId}')" class="w-full mt-1 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-bold py-2 rounded shadow transition-colors text-sm uppercase tracking-wide">Commit Setup</button>
                         </div>
                     `;
                 }
@@ -1341,7 +1344,8 @@
             window.addSetup = async (tourneyId) => {
                 if (!currentUser) return showToast("Database disconnected. Are you testing locally instead of on GitHub?");
                 
-                const btn = document.getElementById(`commit-btn-${tourneyId}`);
+                const targetId = String(tourneyId);
+                const btn = document.getElementById(`commit-btn-${targetId}`);
                 if (btn) { btn.innerHTML = 'Saving...'; btn.disabled = true; }
 
                 const tagInput = document.getElementById('setup-tag').value.trim();
@@ -1353,13 +1357,13 @@
                 }
                 localStorage.setItem('smash_gamer_tag', tagInput);
 
-                const docId = `${tourneyId}_${currentUser.uid}`;
+                const docId = `${targetId}_${currentUser.uid}`;
 
                 if (db) {
                     const setupRef = doc(db, 'artifacts', appId, 'public', 'data', 'setups', docId);
                     try {
                         await setDoc(setupRef, {
-                            tournamentId: tourneyId,
+                            tournamentId: targetId,
                             userId: currentUser.uid,
                             tag: tagInput,
                             type: typeInput,
@@ -1375,20 +1379,21 @@
                     // Local Mock Mode
                     state.setups.push({
                         id: docId,
-                        tournamentId: tourneyId,
+                        tournamentId: targetId,
                         userId: currentUser.uid,
                         tag: tagInput,
                         type: typeInput,
                         timestamp: Date.now()
                     });
                     showToast("Setup saved locally (Preview mode).");
-                    renderSetupsSection(tourneyId);
+                    renderSetupsSection(targetId);
                 }
             };
 
             window.removeSetup = async (tourneyId) => {
                 if (!currentUser) return;
-                const docId = `${tourneyId}_${currentUser.uid}`;
+                const targetId = String(tourneyId);
+                const docId = `${targetId}_${currentUser.uid}`;
                 
                 if (db) {
                     const setupRef = doc(db, 'artifacts', appId, 'public', 'data', 'setups', docId);
@@ -1402,7 +1407,7 @@
                     // Local Mock Mode
                     state.setups = state.setups.filter(s => s.id !== docId);
                     showToast("Setup removed (Preview mode).");
-                    renderSetupsSection(tourneyId);
+                    renderSetupsSection(targetId);
                 }
             };
 
