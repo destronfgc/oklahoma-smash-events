@@ -276,7 +276,7 @@
             position: fixed;
             bottom: 24px;
             right: 24px;
-            z-index: 50;
+            z-index: 9999; /* FIXED: Increased from 50 so it pops over the dark modal background! */
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -1305,7 +1305,7 @@
                                     <option value="Switch">Switch Only</option>
                                 </select>
                             </div>
-                            <button onclick="window.addSetup('${tourneyId}')" class="w-full mt-1 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-bold py-2 rounded shadow transition-colors text-sm uppercase tracking-wide">Commit Setup</button>
+                            <button id="commit-btn-${tourneyId}" onclick="window.addSetup('${tourneyId}')" class="w-full mt-1 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-bold py-2 rounded shadow transition-colors text-sm uppercase tracking-wide">Commit Setup</button>
                         </div>
                     `;
                 }
@@ -1339,11 +1339,18 @@
             };
 
             window.addSetup = async (tourneyId) => {
-                if (!currentUser) return showToast("Database disconnected.");
+                if (!currentUser) return showToast("Database disconnected. Are you testing locally instead of on GitHub?");
+                
+                const btn = document.getElementById(`commit-btn-${tourneyId}`);
+                if (btn) { btn.innerHTML = 'Saving...'; btn.disabled = true; }
+
                 const tagInput = document.getElementById('setup-tag').value.trim();
                 const typeInput = document.getElementById('setup-type').value;
                 
-                if (!tagInput) return showToast("Please enter your tag!");
+                if (!tagInput) {
+                    if (btn) { btn.innerHTML = 'Commit Setup'; btn.disabled = false; }
+                    return showToast("Please enter your tag!");
+                }
                 localStorage.setItem('smash_gamer_tag', tagInput);
 
                 const docId = `${tourneyId}_${currentUser.uid}`;
@@ -1361,7 +1368,8 @@
                         showToast("Setup committed!");
                     } catch(err) {
                         console.error(err);
-                        showToast("Failed to save setup.");
+                        showToast("Failed to save. Check your Firebase Security Rules!");
+                        if (btn) { btn.innerHTML = 'Commit Setup'; btn.disabled = false; }
                     }
                 } else {
                     // Local Mock Mode
